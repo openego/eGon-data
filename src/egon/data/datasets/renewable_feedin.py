@@ -53,6 +53,9 @@ class RenewableFeedin(Dataset):
 
     #:
     name: str = "RenewableFeedin"
+    # When changing heat_pump_cop, also bump HeatPumpsCascade and HeatEtrago
+    # HeatPumpsCascade sizes heat pumps in scenarios with
+    # individual_heating_shares, HeatEtrago uses it as link efficiency.
     #:
     version: str = "0.0.14"
 

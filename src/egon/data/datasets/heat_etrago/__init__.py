@@ -10,7 +10,13 @@ from egon.data.datasets.heat_etrago.power_to_heat import (
     insert_central_power_to_heat,
     insert_individual_power_to_heat,
 )
+from egon.data.datasets.heat_supply.individual_heating import (
+    get_individual_heating_shares,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+from egon.data.datasets.scenario_parameters.parameters import (
+    INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES,
+)
 
 
 def insert_buses(carrier, scenario):
@@ -541,6 +547,12 @@ def insert_central_gas_boilers(scenario):
         AND c.scn_name = '{scenario}'
         """)
 
+    # Scenarios with another backup technology (heat parameter
+    # district_heating_backup) have no central gas boilers
+    if central_boilers.empty:
+        print(f"No central gas boilers in scenario {scenario}.")
+        return
+
     # Add LineString topology
     central_boilers = link_geom_from_buses(central_boilers, scenario)
 
@@ -678,6 +690,58 @@ def buses():
         insert_buses("rural_heat", scenario)
 
 
+def check_individual_heating_supply_by_share(scenario):
+    """Raises if a share scenario has no decentral heating capacities.
+
+    For scenarios with ``individual_heating_shares``, the heat pump and
+    resistive heater capacities in ``supply.egon_individual_heating`` are
+    written by :py:class:`HeatPumpsCascade
+    <egon.data.datasets.heat_supply.individual_heating.HeatPumpsCascade>`.
+    :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>` drops
+    the table whenever it runs, so if HeatSupply was rerun without
+    HeatPumpsCascade, the capacities are missing. Without this check, no
+    rural heat pumps and resistive heaters would be inserted, while the rural
+    heat loads remain, which only shows up as an infeasible eTraGo model.
+
+    Parameters
+    ----------
+    scenario : str
+        Name of the scenario.
+
+    Raises
+    ------
+    RuntimeError
+        If a technology of ``INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES`` has no
+        rows for the scenario.
+
+    """
+    if get_individual_heating_shares(scenario) is None:
+        return
+
+    sources = HeatEtrago.sources
+
+    carriers = db.select_dataframe(f"""
+        SELECT DISTINCT carrier
+        FROM {sources.tables["individual_heating_supply"]}
+        WHERE scenario = '{scenario}'
+        """).carrier
+
+    missing = [
+        tech
+        for tech in INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES
+        if tech not in set(carriers)
+    ]
+
+    if missing:
+        raise RuntimeError(
+            f"Scenario {scenario} uses individual_heating_shares, but "
+            f"{sources.tables['individual_heating_supply']} has no rows for "
+            f"{missing}. These capacities are written by HeatPumpsCascade, "
+            f"and HeatSupply drops the table when it runs. Rerun "
+            f"HeatPumpsCascade after HeatSupply, e.g. by bumping its version."
+        )
+
+
 def supply():
     """Insert individual and district heat supply into eTraGo-tables
 
@@ -689,6 +753,10 @@ def supply():
     None.
 
     """
+
+    # Check all scenarios first, so that nothing is inserted if one fails
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        check_individual_heating_supply_by_share(scenario)
 
     for scenario in config.settings()["egon-data"]["--scenarios"]:
         # There is no direct heat in status quo scenario
@@ -715,6 +783,7 @@ class HeatEtrago(Dataset):
 
     *Dependencies*
       * :py:class:`HeatSupply <egon.data.datasets.heat_supply.HeatSupply>`
+      * :py:class:`HeatPumpsCascade <egon.data.datasets.heat_supply.individual_heating.HeatPumpsCascade>`
       * :py:class:`MvGridDistricts <egon.data.datasets.mv_grid_districts.mv_grid_districts_setup>`
       * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
       * :py:class:`RenewableFeedin <egon.data.datasets.renewable_feedin.RenewableFeedin>`
@@ -732,7 +801,7 @@ class HeatEtrago(Dataset):
     #:
     name: str = "HeatEtrago"
     #:
-    version: str = "0.0.17"
+    version: str = "0.0.20"
 
     sources = DatasetSources(
         tables={

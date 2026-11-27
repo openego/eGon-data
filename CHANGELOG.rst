@@ -90,6 +90,70 @@ Added
 Changed
 -------
 
+* Supply decentral heat in reGon2037 and reGon2045 by technology shares
+  instead of a heat pump capacity target: per MV grid, buildings get a heat
+  pump until the heat pump share of the decentral heat demand is reached,
+  then a resistive heater until its share is reached, and gas boilers
+  otherwise. Resistive heater buildings are supplied via the rural heat bus,
+  gas boiler buildings only via the CH4 load. The technologies and their
+  order are defined once in ``INDIVIDUAL_HEATING_SHARE_TECHNOLOGIES``.
+  HeatEtrago now depends on HeatPumpsCascade and stops if the capacities it
+  writes are missing. Affected datasets: ScenarioParameters, HeatSupply,
+  HeatPumpsCascade, HeatEtrago, HtsEtragoTable and FinalValidations
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Size decentral heat pumps in reGon2037 and reGon2045 with the COP of the
+  MV grid's weather cell in the hour of the building's peak heat demand
+  instead of a fixed COP of 1.7: peak heat demand times the flexibility
+  factor of 24/18, divided by that COP. eGon2035 and the status quo
+  scenarios keep the fixed COP. Affected datasets: HeatPumpsCascade, HeatEtrago,
+  HtsEtragoTable
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Supply all decentral buildings in reGon2045 that do not get a heat pump
+  with a resistive heater instead of a gas boiler, set by the new heat
+  parameter ``individual_heating_remainder``. The resistive heater share
+  then follows from the heat pump share instead of being fixed at X %.
+  The new check SANITY_HP_TECHNOLOGY_SHARES reports the technology shares
+  of every scenario and fails if such a scenario still has gas boilers.
+  Affected datasets: ScenarioParameters, HeatPumpsCascade, HeatEtrago,
+  HtsEtragoTable
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Store the electrical resistive heater capacity per building in
+  reGon2037 and reGon2045 in the new table
+  ``demand.egon_resistive_heater_capacity_buildings``, like the heat pumps
+  in ``demand.egon_hp_capacity_buildings``. The resistive heater capacity
+  per MV grid is the sum of these building capacities. The new checks
+  SANITY_RH_CAPACITY_POSITIVE, SANITY_RH_NOT_WITH_HP and SANITY_RH_GRID_SUM
+  validate the table. Affected datasets: HeatSupply, HeatPumpsCascade,
+  HeatEtrago, HtsEtragoTable
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Replace the central gas boilers in reGon2045 by resistive heaters as
+  backup of each district heating grid, set by the new heat parameter
+  ``district_heating_backup``. The backup covers the gap between the peak
+  heat demand of the grid and its firm capacity (CHP, geothermal, resistive
+  heaters and heat pumps with the COP in the peak hour). Scenarios without
+  the parameter keep the gas boilers. HeatSupply now depends on
+  HeatTimeSeries and RenewableFeedin. SANITY_DH_SUPPLY_UNIQUE_CARRIER and
+  SANITY_DH_SUPPLY_SCENARIO_TARGET allow reGon2045 without gas boilers and
+  with more resistive heaters than the target. Affected datasets:
+  ScenarioParameters, HeatSupply, HeatPumpsCascade, HeatEtrago
+  `#1590 <https://github.com/openego/eGon-data/issues/1590>`_
+* Take the targets of large heat pumps and electric boilers in district
+  heating for reGon2037 and reGon2045 from the NEP 2025 (2nd draft,
+  table 4, scenario C: 8.3 / 9.8 GW heat pumps, 13.8 / 13.5 GW electric
+  boilers) instead of the "Kurzstudie_KWK" sheet, which gave 1.2 GW each
+  for both scenarios. The values are read from the new rows
+  "Grosswaermepumpen" and "Elektrokessel" of the NEP sheets in
+  NEP_V2025_scnC2037.xlsx, which needs the updated data bundle. Solar and
+  geothermal targets are unchanged. Affected datasets: ScenarioCapacities;
+  HeatSupply and downstream have to be rerun
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
+* Lower the estimated full load hours of CHP plants in the district heating
+  cascade from 8760 h to 2000 h for all scenarios (Evaluierung der KWK
+  2026, AGFW-Hauptbericht 2024). With 8760 h, CHP plants covered the whole
+  demand of many small and medium grids, so these got no heat pumps. The
+  value only changes the distribution of the targets to the grids, not
+  their sums. Affected datasets: HeatSupply
+  `#1563 <https://github.com/openego/eGon-data/issues/1563>`_
 * Changes to improve the matching of the Kraftwerksliste from the NEP
   and the corresponding MaStR-data for CHP. 
   '#1494 <https://github.com/openego/eGon-data/issues/1494>`_

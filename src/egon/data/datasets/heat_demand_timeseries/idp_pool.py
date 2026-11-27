@@ -251,6 +251,7 @@ def idp_pool_generator():
     splitter("Chemnitz", "SFH")
     splitter("Luebeck", "MFH")
     splitter("Kassel", "MFH")
+    splitter("Wuerzburg", "MFH")
     splitter("Chemnitz", "MFH")
 
     def pool_normalize(x):

@@ -31,14 +31,14 @@ def insert_individual_power_to_heat(scenario):
         WHERE link_id IN (
             SELECT link_id FROM {targets.tables["heat_links"]}
         WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
-                          'rural_resisitive_heater')
+                          'rural_resistive_heater')
         AND scn_name = '{scenario}')
         AND scn_name = '{scenario}'
         """)
     db.execute_sql(f"""
         DELETE FROM {targets.tables["heat_links"]}
         WHERE carrier IN ('individual_heat_pump', 'rural_heat_pump',
-                          'rural_resisitive_heater')
+                          'rural_resistive_heater')
         AND bus0 IN 
         (SELECT bus_id 
          FROM {targets.tables["heat_buses"]}
@@ -108,12 +108,15 @@ def insert_individual_power_to_heat(scenario):
         # Assign voltage level
         resistive_heaters["voltage_level"] = 7
 
-        # Insert heatpumps
+        # Insert resistive heaters
         insert_power_to_heat_per_level(
             resistive_heaters,
             carrier="rural_resistive_heater",
             multiple_per_mv_grid=False,
             scenario=scenario,
+            vom=get_sector_parameters("heat", scenario)["marginal_cost"][
+                "rural_resistive_heater"
+            ],
         )
 
 
@@ -298,6 +301,14 @@ def insert_power_to_heat_per_level(
 
     """
     sources, targets = load_sources_and_targets("HeatEtrago")
+
+    if heat_pumps.empty:
+        print(
+            f"No {carrier} with multiple_per_mv_grid={multiple_per_mv_grid} "
+            f"in scenario {scenario}. Skipping insertion."
+        )
+        return
+
     if "central" in carrier:
         # Calculate heat pumps per electrical bus
         gdf = assign_electrical_bus(
@@ -306,6 +317,14 @@ def insert_power_to_heat_per_level(
 
     else:
         gdf = heat_pumps.copy()
+
+    # Bus assignment can also leave nothing (e.g. no matching heat bus)
+    if gdf.empty:
+        print(
+            f"No {carrier} could be assigned to buses in scenario {scenario}. "
+            "Skipping insertion."
+        )
+        return
 
     # Select geometry of buses
     geom_buses = db.select_geodataframe(

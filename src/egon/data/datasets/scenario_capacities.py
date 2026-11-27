@@ -830,6 +830,22 @@ def district_heating_input():
         "reGon2045": sources.files["reGon_capacities"],
     }
 
+    # For reGon2037 and reGon2045, large heat pumps and electric boilers
+    # are taken from the NEP 2025 instead of the "Kurzstudie_KWK" sheet:
+    # electrical capacity in GW in the column "Summe" of the scenario's NEP
+    # sheet (NEP 2037/2045, version 2025, 2nd draft, chapter 2, table 4 =
+    # BNetzA approval of the scenario framework 2025, table 10, scenario C).
+    # The NEP values cover district and process heat. Solar and geothermal
+    # stay with "Kurzstudie_KWK", as the NEP has no values for them.
+    nep_pth_sheet = {
+        "reGon2037": "2.Entwurf_NEP2037C_V2025",
+        "reGon2045": "2.Entwurf_NEP2045C_V2025",
+    }
+    nep_pth_row = {
+        "Grosswaermepumpe": "Grosswaermepumpen",
+        "Elektrodenheizkessel": "Elektrokessel",
+    }
+
     scenarios = [
         s
         for s in config.settings()["egon-data"]["--scenarios"]
@@ -864,6 +880,18 @@ def district_heating_input():
         )
         df.set_index(["Energietraeger", "Name"], inplace=True)
 
+        if scenario in nep_pth_sheet:
+            # Electrical capacity in MW per technology from the NEP sheet
+            df_nep = pd.read_excel(
+                file,
+                sheet_name=nep_pth_sheet[scenario],
+                index_col="Unnamed: 0",
+            )
+            nep_pth_capacity = {
+                c: df_nep.loc[row, "Summe"] * 1e3
+                for c, row in nep_pth_row.items()
+            }
+
         # Scale values to population share in testmode
         if (
             config.settings()["egon-data"]["--dataset-boundary"]
@@ -873,8 +901,26 @@ def district_heating_input():
                 pd.IndexSlice[:, "Fernwaermeerzeugung"], "Wert"
             ] *= population_share()
 
+            if scenario in nep_pth_sheet:
+                nep_pth_capacity = {
+                    c: capacity * population_share()
+                    for c, capacity in nep_pth_capacity.items()
+                }
+
         # insert heatpumps and resistive heater as link
         for c in ["Grosswaermepumpe", "Elektrodenheizkessel"]:
+            if scenario in nep_pth_sheet:
+                capacity = nep_pth_capacity[c]
+            else:
+                # Electrical capacity from heat generation, full load
+                # hours and efficiency (COP for heat pumps)
+                capacity = (
+                    df.loc[(c, "Fernwaermeerzeugung"), "Wert"]
+                    * 1e6
+                    / df.loc[(c, "Volllaststunden"), "Wert"]
+                    / df.loc[(c, "Wirkungsgrad"), "Wert"]
+                )
+
             entry = EgonScenarioCapacities(
                 component="link",
                 scenario_name=scenario,
@@ -885,10 +931,7 @@ def district_heating_input():
                     if c == "Grosswaermepumpe"
                     else "resistive_heater"
                 ),
-                capacity=df.loc[(c, "Fernwaermeerzeugung"), "Wert"]
-                * 1e6
-                / df.loc[(c, "Volllaststunden"), "Wert"]
-                / df.loc[(c, "Wirkungsgrad"), "Wert"],
+                capacity=capacity,
             )
 
             session.add(entry)
