@@ -475,7 +475,7 @@ with airflow.DAG(
     with TaskGroup(group_id="gas_supply") as gas_supply_group:
         # H2 steel tanks and saltcavern storage
         insert_H2_storage = HydrogenStoreEtrago(
-            dependencies=[insert_hydrogen_buses]
+            dependencies=[create_gas_polygons, insert_hydrogen_buses]
         )
 
         # Gas abroad

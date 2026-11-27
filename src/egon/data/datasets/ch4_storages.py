@@ -244,13 +244,12 @@ class CH4Storages(Dataset):
         }
 
 
-def import_installed_ch4_storages(scn_name):
+def german_ch4_storages(scn_name):
     """
     Defines list of CH4 stores from the SciGRID_gas data
 
     This function reads from the SciGRID_gas dataset the existing CH4
-    cavern stores in Germany, adjusts and returns them, reduced to the
-    capacity of the scenario (:py:func:`scale_to_scenario_capacity`).
+    cavern stores in Germany, adjusts and returns them.
     Caverns reference: SciGRID_gas dataset (datasets/gas_data/data/IGGIELGN_Storages.csv
     downloaded in :func:`download_SciGRID_gas_data <egon.data.datasets.gas_grid.download_SciGRID_gas_data>`).
     For more information on these data, refer to the
@@ -325,9 +324,32 @@ def import_installed_ch4_storages(scn_name):
         Gas_storages_list["end_year"] >= year
     ]
 
+    return Gas_storages_list
+
+
+def import_installed_ch4_storages(scn_name):
+    """
+    Return the CH4 stores of the scenario attached to their CH4 bus
+
+    The stores of :py:func:`german_ch4_storages` are reduced to the
+    capacity of the scenario (:py:func:`scale_to_scenario_capacity`).
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    Returns
+    -------
+    Gas_storages_list :
+        Dataframe containing the CH4 cavern store units in Germany
+
+    """
     # Reduce the fleet of 2021 to the storage capacity of the scenario,
     # converting the caverns first, see :py:func:`scale_to_scenario_capacity`
-    Gas_storages_list = scale_to_scenario_capacity(Gas_storages_list, scn_name)
+    Gas_storages_list = scale_to_scenario_capacity(
+        german_ch4_storages(scn_name), scn_name
+    )
 
     # Cut data to federal state if in testmode
     boundary = settings()["egon-data"]["--dataset-boundary"]

@@ -42,6 +42,9 @@ from egon.data.datasets.hydrogen_etrago.nep2025 import (
     nep_kernnetz_dn_2045,
     nep_kernnetz_not_in_2045,
 )
+from egon.data.datasets.hydrogen_etrago.storage import (
+    converted_cavern_volumes,
+)
 from egon.data.datasets.scenario_parameters import (
     get_scenario_year,
     get_sector_parameters,
@@ -1293,8 +1296,8 @@ def connect_saltcavern_to_h2_grid(scn_name):
                         """
     salt_caverns = gpd.read_postgis(salt_caverns_query, engine)
 
-    # Storage capacity of the NEP per saltcavern, shared over the
-    # saltcaverns of a federal state by their storage potential
+    # Storage capacity of the NEP per saltcavern, shared over the saltcaverns
+    # of a federal state by their volume (potential + converted CH4 caverns)
     rates, injection_share = nep_h2_storage_rates(scn_name)
     potential = db.select_dataframe(
         f"""
@@ -1306,6 +1309,9 @@ def connect_saltcavern_to_h2_grid(scn_name):
         GROUP BY m."bus_H2", s.gen
         """
     )
+    potential["potential"] += potential.bus_id.map(
+        converted_cavern_volumes(scn_name)
+    ).fillna(0)
     potential["survey_state"] = potential.state.map(SALTCAVERN_SURVEY_STATES)
     potential["share"] = potential.potential / potential.groupby(
         "survey_state"

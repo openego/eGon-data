@@ -23,6 +23,7 @@ from egon.data.datasets.hydrogen_etrago.power_to_h2 import (
 from egon.data.datasets.hydrogen_etrago.storage import (
     insert_H2_overground_storage,
     insert_H2_saltcavern_storage,
+    insert_H2_storage_in_converted_caverns,
     write_saltcavern_potential,
 )
 
@@ -67,6 +68,7 @@ def insert_h2_stores():
     for scn_name in scenarios:
         insert_H2_overground_storage(scn_name)
         insert_H2_saltcavern_storage(scn_name)
+        insert_H2_storage_in_converted_caverns(scn_name)
 
 
 def no_h2_stores_required():
@@ -177,8 +179,11 @@ class HydrogenStoreEtrago(Dataset):
       * H2 underground stores or saltcavern stores at each H2_saltcavern
         bus with the function :py:func:`insert_H2_saltcavern_storage <egon.data.datasets.hydrogen_etrago.storage.insert_H2_saltcavern_storage>`
         for all scenarios ,
+      * H2 underground stores in the CH4 caverns converted to H2 with the
+        function :py:func:`insert_H2_storage_in_converted_caverns <egon.data.datasets.hydrogen_etrago.storage.insert_H2_storage_in_converted_caverns>`,
 
     *Dependencies*
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`SubstationVoronoi <egon.data.datasets.substation_voronoi.SubstationVoronoi>`

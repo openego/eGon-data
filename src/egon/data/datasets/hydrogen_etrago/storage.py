@@ -8,7 +8,8 @@ store potentials in Germany:
   * H2 underground stores (carrier: 'H2_underground'): saltcavern store
     at every H2_saltcavern bus.
     NB: the saltcavern locations define the H2_saltcavern buses locations.
-All these stores are modelled as extendable PyPSA stores.
+All these stores are modelled as extendable PyPSA stores, except the CH4
+caverns converted to H2 (carrier: 'H2_underground', not extendable).
 
 """
 
@@ -18,7 +19,16 @@ import pandas as pd
 
 from egon.data import db
 from egon.data.datasets import load_sources_and_targets
+from egon.data.datasets.ch4_storages import (
+    german_ch4_storages,
+    scale_to_scenario_capacity,
+    store_type,
+)
 from egon.data.datasets.scenario_parameters import get_sector_parameters
+
+# Working gas energy of the German caverns with H2 per that with natural gas
+# (LHV); INES/DVGW/BVEG (DBI), Wasserstoff speichern, June 2022, Tab. 44, p. 157
+CAVERN_H2_ENERGY_RATIO = 30_679 / 162_106
 
 
 def insert_H2_overground_storage(scn_name):
@@ -193,6 +203,77 @@ def insert_H2_saltcavern_storage(scn_name):
     storages = storages.reset_index(drop=True)
 
     # # Insert data to db
+    storages.to_sql(
+        targets.get_table_name("hydrogen_stores"),
+        db.engine(),
+        schema=targets.get_table_schema("hydrogen_stores"),
+        index=False,
+        if_exists="append",
+    )
+
+
+def converted_cavern_volumes(scn_name):
+    """
+    Return the H2 working gas of the CH4 caverns converted to H2 per bus
+
+    The cavern volume that leaves the methane system
+    (:py:func:`scale_to_scenario_capacity <egon.data.datasets.ch4_storages.scale_to_scenario_capacity>`)
+    is stored as H2 at the H2_saltcavern bus of its area.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    Returns
+    -------
+    pandas.Series
+        H2 working gas in MWh (lower heating value) per H2_saltcavern bus
+
+    """
+    stores = german_ch4_storages(scn_name)
+    caverns = stores[stores["name"].apply(store_type) == "cavern"]
+    kept = scale_to_scenario_capacity(stores, scn_name)["e_nom"]
+
+    caverns = gpd.GeoDataFrame(
+        {
+            "e_nom": (
+                caverns["e_nom"] - kept.reindex(caverns.index, fill_value=0)
+            )
+            * CAVERN_H2_ENERGY_RATIO
+        },
+        geometry=gpd.points_from_xy(caverns["long"], caverns["lat"]),
+        crs=4326,
+    )
+    caverns = db.assign_gas_bus_id(caverns, scn_name, "H2_saltcavern")
+
+    return caverns.groupby("bus").e_nom.sum()
+
+
+def insert_H2_storage_in_converted_caverns(scn_name):
+    """
+    Insert the CH4 caverns converted to H2 as H2_underground stores
+
+    Not extendable stores with the volumes of
+    :py:func:`converted_cavern_volumes`.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+
+    Returns
+    -------
+    None
+
+    """
+    sources, targets = load_sources_and_targets("HydrogenStoreEtrago")
+
+    storages = converted_cavern_volumes(scn_name).reset_index()
+    storages["scn_name"] = scn_name
+    storages["carrier"] = "H2_underground"
+    storages["store_id"] = db.next_etrago_id("store", len(storages))
+
     storages.to_sql(
         targets.get_table_name("hydrogen_stores"),
         db.engine(),
