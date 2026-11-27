@@ -1274,8 +1274,9 @@ def gas(scenario):
         # 186 GWh/h; NEP Gas/H2 2025 (June 2026), Tab. 19, p. 106
 
         # Line pack of the German methane grid
-        parameters["CH4_grid_capacity"] = 114_200  # [MWh]
-        # 130 GWh x (1 - 4,860/40,000), as in eGon2035
+        parameters["CH4_grid_capacity"] = 130_000  # [MWh]
+        # whole grid; G. Volk (BNetzA), Die Herausforderung an die
+        # Bundesnetzagentur die Energiewende zu meistern, Berlin, Dec 2012
 
         # Industrial gas demand in Germany over the year, incl. non-energy use
         # (derivation: documentation of the gas demand)
@@ -1384,10 +1385,10 @@ def gas(scenario):
         }
 
         # Insert max gas production (generator) over the year
-        # Only biogas is produced in Germany in reGon2045 (natural gas phase-out)
+        # No methane system in Germany in reGon2045
         parameters["max_gas_generation_overtheyear"] = {
             "CH4": 0,  # [MWh] no domestic production in 2045; source: BNetzA, approval of the Szenariorahmen Gas und Wasserstoff 2025 (30 April 2025), p. 6, as in NEP Gas und Wasserstoff 2025, Tab. 3
-            "biogas": 12_300_000,  # [MWh] biomethane feed-in 2025, used as conservative floor (no figure set for 2045); source: dena Einspeiseatlas 2025
+            "biogas": 0,  # [MWh] no biomethane feed-in (no methane grid)
         }
 
         # Max hydrogen imports over the year (e_nom_max of the H2 generators)
@@ -1400,10 +1401,8 @@ def gas(scenario):
         # No methane stores in 2045 in scenario 2 (only in scenario 3); NEP Gas/H2
         # 2025 (June 2026), p. 36
 
-        # Line pack of the German methane grid
-        parameters["CH4_grid_capacity"] = 17_900  # [MWh]
-        # 130 GWh x 5,500/40,000: methane network 2045 of the NEP (Anhang 5);
-        # NEP Gas/H2 2025 (June 2026), p. 117
+        # Line pack of the German methane grid: no methane grid in 2045
+        parameters["CH4_grid_capacity"] = 0  # [MWh]
 
         # Industrial gas demand in Germany over the year, incl. non-energy use
         # (derivation: documentation of the gas demand)

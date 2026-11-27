@@ -356,8 +356,7 @@ class HydrogenGridEtrago(Dataset):
     scenarios by executing the function
     :py:func:`insert_h2_pipelines
     <egon.data.datasets.hydrogen_etrago.h2_grid.insert_h2_pipelines>`,
-    including the NEP measures, the cross-border links, the H2 imports and
-    the removal of the CH4 pipelines converted to H2.
+    including the NEP measures, the cross-border links and the H2 imports.
 
     *Dependencies*
       * :py:class:`SaltcavernData <egon.data.datasets.saltcavern.SaltcavernData>`
@@ -371,7 +370,7 @@ class HydrogenGridEtrago(Dataset):
     *Resulting*
       * :py:class:`grid.egon_etrago_link
       <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
-        (H2 links) and reduced (converted CH4 pipelines)
+        (H2 links)
       * :py:class:`grid.egon_etrago_generator
       <egon.data.datasets.etrago_setup.EgonPfHvGenerator>` is extended
         (H2 imports)

@@ -539,8 +539,8 @@ def insert_ch4_generators(scn_name):
       :py:func:`load_biogas_generators` and :py:func:`load_LNG_generators`
       that respectively return dataframes containing the natural- an
       bio-gas production units and the LNG terminals in Germany. The
-      natural gas units are only inserted in the scenarios that still
-      have a domestic fossil methane production, the LNG terminals in the
+      natural gas and biogas units are only inserted in the scenarios
+      with such a production over the year, the LNG terminals in the
       scenarios before 2045,
     * attribution of the bus_id to which each generator is connected
       (call the function :func:`assign_gas_bus_id <egon.data.db.assign_gas_bus_id>`
@@ -569,21 +569,22 @@ def insert_ch4_generators(scn_name):
     """
     clean_ch4_generators(scn_name)
 
-    # Domestic natural gas production is a scenario parameter
-    fossil_ch4_production = (
-        get_sector_parameters("gas", scn_name)[
-            "max_gas_generation_overtheyear"
-        ]["CH4"]
-        > 0
-    )
+    # Domestic natural gas and biomethane production are scenario parameters
+    production = get_sector_parameters("gas", scn_name)[
+        "max_gas_generation_overtheyear"
+    ]
 
     generators = []
-    if fossil_ch4_production:
+    if production["CH4"] > 0:
         generators.append(load_NG_generators(scn_name))
-    generators.append(load_biogas_generators(scn_name))
+    if production["biogas"] > 0:
+        generators.append(load_biogas_generators(scn_name))
     lng = load_LNG_generators(scn_name)
     if not lng.empty:
         generators.append(lng)
+
+    if not generators:
+        return
 
     CH4_generators_list = pd.concat(generators)
 

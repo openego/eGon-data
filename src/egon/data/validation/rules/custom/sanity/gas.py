@@ -828,7 +828,8 @@ class GasNetworkSupply(_GasRule):
     An H2 part has a supply if it holds an electrolyser, an import or an SMR
     link from a CH4 part with a supply. A load or a consumer link (CHP,
     boiler, gas turbine, fuel cell) in a part without supply cannot be
-    served. A part without a bus in Germany is cut off from the model.
+    served. A part without a bus in Germany is cut off from the model,
+    unless the network has no bus in Germany at all.
 
     Parameters
     ----------
@@ -940,7 +941,9 @@ class GasNetworkSupply(_GasRule):
         all_parts = set(part[name].values())
         dry = all_parts - supplied[name]
         german = buses.loc[buses["country"] == "DE", "bus0"]
-        cut_off = sorted(all_parts - parts_of(german, name))
+        german_parts = parts_of(german, name)
+        # Without a bus in Germany, the network abroad stands alone
+        cut_off = sorted(all_parts - german_parts) if german_parts else []
         load_part = loads["bus0"].map(part[name])
         dry_loads = loads[load_part.isin(dry)]
         consumers = links[

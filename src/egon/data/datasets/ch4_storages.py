@@ -12,7 +12,6 @@ import ast
 import re
 import unicodedata
 
-from shapely.geometry import LineString
 import geopandas
 import numpy as np
 import pandas as pd
@@ -20,12 +19,6 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
-from egon.data.datasets.hydrogen_etrago.h2_grid import match_nep_ch4_network
-from egon.data.datasets.hydrogen_etrago.nep2025 import (
-    NEP_CH4_NETWORK_2045_NODES,
-    NEP_CH4_NETWORK_YEAR,
-    nep_ch4_network_2045,
-)
 from egon.data.datasets.scenario_parameters import (
     get_scenario_year,
     get_sector_parameters,
@@ -241,13 +234,10 @@ class CH4Storages(Dataset):
                     expected={
                         "status2024": 0,
                         "reGon2037": {
-                            "Schleswig-Holstein": 8982.346,
+                            "Schleswig-Holstein": 9125.876,
                             "Everything": FROM_PARAMETERS,
                         },
-                        "reGon2045": {
-                            "Schleswig-Holstein": 260.307,
-                            "Everything": FROM_PARAMETERS,
-                        },
+                        "reGon2045": 0,
                     },
                 ),
             ],
@@ -451,12 +441,9 @@ def german_ch4_pipes():
 
     Returns
     -------
-    geopandas.GeoDataFrame
+    pandas.DataFrame
         Pipelines with both ends in Germany, with the columns "bus0" and
-        "bus1" (SciGRID_gas node ids), "diameter_m", "length_km" and
-        "p_nom" (the diameter in mm, only used to rank parallel pipelines
-        in :py:func:`match_nep_ch4_network
-        <egon.data.datasets.hydrogen_etrago.h2_grid.match_nep_ch4_network>`)
+        "bus1" (SciGRID_gas node ids), "diameter_m" and "length_km"
 
     """
     nodes = german_ch4_nodes()
@@ -465,13 +452,11 @@ def german_ch4_pipes():
         CH4Storages.sources.files["scigrid_pipes"],
         delimiter=";",
         decimal=".",
-        usecols=["node_id", "lat", "long", "param"],
+        usecols=["node_id", "param"],
     )
 
     rows = []
-    for node_id, lat, lon, param in zip(
-        pipes["node_id"], pipes["lat"], pipes["long"], pipes["param"]
-    ):
+    for node_id, param in zip(pipes["node_id"], pipes["param"]):
         bus0, bus1 = [
             b.strip().strip("'") for b in node_id.strip("][").split(",")
         ]
@@ -482,37 +467,22 @@ def german_ch4_pipes():
         if not p.get("diameter_mm") or not p.get("length_km"):
             continue
 
-        lat, lon = ast.literal_eval(lat), ast.literal_eval(lon)
         rows.append(
             {
                 "bus0": bus0,
                 "bus1": bus1,
                 "diameter_m": p["diameter_mm"] / 1000,
                 "length_km": p["length_km"],
-                "p_nom": p["diameter_mm"],
-                "geometry": LineString(
-                    list(
-                        zip(
-                            [lon[0]] + p.get("path_long", []) + [lon[1]],
-                            [lat[0]] + p.get("path_lat", []) + [lat[1]],
-                        )
-                    )
-                ),
             }
         )
 
-    return geopandas.GeoDataFrame(rows, geometry="geometry", crs=4326)
+    return pd.DataFrame(rows)
 
 
-def german_ch4_line_pack_shares(scn_name):
+def german_ch4_line_pack_shares():
     """
     Return the share of the line pack of each German CH4 node, by the
     volume of the pipelines attached to it (whole German grid)
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
 
     Returns
     -------
@@ -523,17 +493,6 @@ def german_ch4_line_pack_shares(scn_name):
     """
     nodes = german_ch4_nodes()
     pipes = german_ch4_pipes()
-
-    if get_scenario_year(scn_name) >= NEP_CH4_NETWORK_YEAR:
-        buses = geopandas.GeoDataFrame(
-            index=nodes.index,
-            geometry=geopandas.points_from_xy(nodes["x"], nodes["y"]),
-            crs=4326,
-        )
-        keep, _ = match_nep_ch4_network(
-            pipes, buses, nep_ch4_network_2045(), NEP_CH4_NETWORK_2045_NODES
-        )
-        pipes = pipes.loc[sorted(keep)]
 
     # The cross section without the constant pi/4, which cancels out in
     # the shares
@@ -580,7 +539,7 @@ def import_ch4_grid_capacity(scn_name):
     Gas_grid_capacity = get_sector_parameters("gas", scn_name)[
         "CH4_grid_capacity"
     ]
-    shares = german_ch4_line_pack_shares(scn_name)
+    shares = german_ch4_line_pack_shares()
 
     sql_gas = f"""SELECT bus_id, scn_name, carrier, x, y
                  FROM {CH4Storages.sources.tables['gas_buses']}
