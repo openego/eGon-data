@@ -93,7 +93,6 @@ class IndustrialGasDemandScenarios(Dataset):
       * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
-      * :py:class:`HydrogenGridEtrago <egon.data.datasets.hydrogen_etrago.HydrogenGridEtrago>`
       * :py:class:`IndustrialGasDemand <IndustrialGasDemand>`
 
     *Resulting tables*
@@ -110,9 +109,7 @@ class IndustrialGasDemandScenarios(Dataset):
     sources = DatasetSources(
         tables={
             "boundaries_vg250_krs": "boundaries.vg250_krs",
-            "boundaries_vg250_sta_union": "boundaries.vg250_sta_union",
             "egon_etrago_bus": "grid.egon_etrago_bus",
-            "egon_etrago_link": "grid.egon_etrago_link",
         },
         files={
             "region_mapping_json": "./datasets/gas_data/demand/region_corr.json",
@@ -202,9 +199,12 @@ class IndustrialGasDemandScenarios(Dataset):
         }
 
 
-def read_and_scale_regional_demand(scn_name, carrier):
-    """
-    Read and scale the industrial gas demand data in Germany, per NUTS3
+def read_industrial_demand(scn_name, carrier):
+    """Read the industrial gas demand data in Germany
+
+    This function reads the methane or hydrogen industrial demand time
+    series previously downloaded in :py:func:`download_industrial_gas_demand`
+    and scales them to the demand of the scenario.
 
     Parameters
     ----------
@@ -216,8 +216,7 @@ def read_and_scale_regional_demand(scn_name, carrier):
     Returns
     -------
     df : pandas.DataFrame
-        Dataframe with the columns "values" (time series), "name_short"
-        (NUTS3 code of VG250), "NUTS0" and "NUTS1"
+        Dataframe containing the industrial gas demand time series
 
     """
     target_file = Path(
@@ -281,41 +280,15 @@ def read_and_scale_regional_demand(scn_name, carrier):
         industrial_loads_list["NUTS0"].str.match("DE")
     ]
 
-    if (
-        carrier == "H2_for_industry"
-        and scn_name in SCENARIOS_H2_SURVEY
-        and not H2_DEMAND_BY_GRID
-    ):
+    if carrier == "H2_for_industry":
         industrial_loads_list = scale_to_survey_states(
             industrial_loads_list, scn_name
         )
 
     # Scale on the German total, before the cut to the test boundary
-    return scale_to_scenario_demand(industrial_loads_list, scn_name, carrier)
-
-
-def read_industrial_demand(scn_name, carrier):
-    """
-    Read the industrial gas demand data in Germany
-
-    This function reads the methane or hydrogen industrial demand time
-    series previously downloaded in :py:func:`download_industrial_gas_demand`,
-    spread over the NUTS3 regions of the FfE data.
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
-    carrier : str
-        Name of the gas carrier
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        Dataframe containing the industrial gas demand time series
-
-    """
-    industrial_loads_list = read_and_scale_regional_demand(scn_name, carrier)
+    industrial_loads_list = scale_to_scenario_demand(
+        industrial_loads_list, scn_name, carrier
+    )
 
     # Cut data to federal state if in testmode
     boundary = settings()["egon-data"]["--dataset-boundary"]
@@ -368,131 +341,6 @@ def read_industrial_demand(scn_name, carrier):
     return industrial_loads_list.rename(
         columns={"point": "geom"}
     ).set_geometry("geom", crs=4326)
-
-
-def h2_grid_bus_weights(scn_name):
-    """
-    Total connected H2_grid pipe capacity per German H2_grid bus
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
-
-    Returns
-    -------
-    geopandas.GeoDataFrame
-        German H2_grid buses (index: bus_id) with the columns "p_nom"
-        (total connected pipe capacity in MW) and "geom" (point)
-
-    """
-    buses = db.select_geodataframe(
-        f"""
-        SELECT bus_id, geom FROM
-        {IndustrialGasDemandScenarios.sources.tables['egon_etrago_bus']}
-        WHERE scn_name = '{scn_name}' AND carrier = 'H2_grid'
-        AND country = 'DE';
-        """,
-        index_col="bus_id",
-        epsg=4326,
-    )
-
-    links = db.select_dataframe(
-        f"""
-        SELECT bus0, bus1, p_nom FROM
-        {IndustrialGasDemandScenarios.sources.tables['egon_etrago_link']}
-        WHERE scn_name = '{scn_name}' AND carrier = 'H2_grid';
-        """
-    )
-    connected_p_nom = (
-        pd.concat(
-            [
-                links.set_index("bus0")["p_nom"],
-                links.set_index("bus1")["p_nom"],
-            ]
-        )
-        .groupby(level=0)
-        .sum()
-    )
-
-    buses["p_nom"] = connected_p_nom.reindex(buses.index).fillna(0)
-
-    if buses.empty or buses["p_nom"].sum() == 0:
-        raise ValueError(
-            f"{scn_name}: no H2_grid pipeline capacity found to weight the "
-            "spatial distribution of the industrial H2 demand across the "
-            "H2 core grid."
-        )
-
-    return buses
-
-
-def within_test_boundary(buses):
-    """
-    Drop the H2_grid buses outside the area of the test mode
-
-    Parameters
-    ----------
-    buses : geopandas.GeoDataFrame
-        H2_grid buses with point geometries in EPSG:4326
-
-    Returns
-    -------
-    geopandas.GeoDataFrame
-        The buses inside the boundary (all of them without a boundary)
-
-    """
-    boundary = settings()["egon-data"]["--dataset-boundary"]
-    if boundary == "Everything":
-        return buses
-    boundary_geom = db.select_geodataframe(
-        f"""
-        SELECT geometry AS geom
-        FROM {IndustrialGasDemandScenarios.sources.tables['boundaries_vg250_sta_union']}
-        """,
-        geom_col="geom",
-        epsg=4326,
-    ).union_all()
-    return buses[buses.within(boundary_geom)]
-
-
-def read_industrial_h2_demand_by_grid(scn_name):
-    """
-    Industrial H2 demand spread across the buses of the H2 core grid,
-    weighted by their connected pipe capacity (FfE temporal profile)
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
-
-    Returns
-    -------
-    pandas.DataFrame
-        Industrial H2 demand at the buses of the H2 core grid, with the
-        columns "p_set" (hourly time series) and "bus" (bus_id, index)
-
-    """
-    regional_demand = read_and_scale_regional_demand(
-        scn_name, "H2_for_industry"
-    )
-    # German-wide hourly profile: the sum over all NUTS3 regions, the
-    # spatial split of the FfE pattern is not used for H2 any more.
-    national_profile = np.array(
-        [sum(hour) for hour in zip(*regional_demand["values"])]
-    )
-
-    buses = h2_grid_bus_weights(scn_name)
-    # Share of the national pipe capacity, before the boundary cut
-    weight = buses["p_nom"] / buses["p_nom"].sum()
-    local_buses = within_test_boundary(buses)
-    weight = weight.loc[local_buses.index]
-
-    result = pd.DataFrame(index=local_buses.index)
-    result["p_set"] = [list(national_profile * w) for w in weight]
-    result["bus"] = result.index
-
-    return result
 
 
 def scale_to_scenario_demand(industrial_loads_list, scn_name, carrier):
@@ -574,7 +422,7 @@ def scale_to_survey_states(industrial_loads_list, scn_name):
         The dataframe with the rescaled time series
 
     """
-    year = 2045 if get_scenario_year(scn_name) >= 2045 else 2037
+    year = get_scenario_year(scn_name)
     survey = pd.Series(nep_h2_industry_projects()[year], dtype=float)
 
     annual = industrial_loads_list["values"].map(sum)
@@ -599,14 +447,6 @@ def scale_to_survey_states(industrial_loads_list, scn_name):
     ]
     return industrial_loads_list
 
-
-# Scenarios whose industrial H2 demand per federal state follows the market
-# survey of the Szenariorahmen Gas und Wasserstoff 2025
-SCENARIOS_H2_SURVEY = {"reGon2037", "reGon2045"}
-
-# Alternative for these scenarios: one German profile spread over the
-# H2_grid buses by their connected pipe capacity (not used by default)
-H2_DEMAND_BY_GRID = False
 
 # Federal states of the market survey (some grouped) per NUTS1 code
 SURVEY_STATES = {
@@ -634,9 +474,7 @@ def read_and_process_demand(scn_name, carrier, grid_carrier):
 
     This function prepares and returns the industrial gas demand time
     series for CH4 or H2 and for a specific scenario by executing the
-    following steps (for H2 in :py:data:`SCENARIOS_H2_SURVEY` with
-    :py:data:`H2_DEMAND_BY_GRID`: :py:func:`read_industrial_h2_demand_by_grid`
-    instead):
+    following steps:
 
       * Read the industrial demand time series in Germany with the
         function :py:func:`read_industrial_demand`
@@ -662,18 +500,6 @@ def read_and_process_demand(scn_name, carrier, grid_carrier):
     """
     if grid_carrier is None:
         grid_carrier = carrier
-
-    if (
-        carrier == "H2_for_industry"
-        and scn_name in SCENARIOS_H2_SURVEY
-        and H2_DEMAND_BY_GRID
-    ):
-        # The buses of the H2 core grid are already the target buses, no
-        # further spatial assignment (assign_gas_bus_id) is needed.
-        industrial_loads_list = read_industrial_h2_demand_by_grid(scn_name)
-        industrial_loads_list["carrier"] = carrier
-        return industrial_loads_list
-
     industrial_loads_list = read_industrial_demand(scn_name, carrier)
     number_loads = len(industrial_loads_list)
 

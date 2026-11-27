@@ -7,7 +7,9 @@ created by :py:func:`insert_hydrogen_buses`:
 
 * H2_grid buses: nodes of the hydrogen core network and of the NEP
   sections with a pipeline in the scenario year,
-* H2 buses: at the CH4 buses more than 10 km from every H2_grid bus,
+* H2 buses: at the other nodes of the list more than 10 km from every
+  H2_grid bus and, in reGon2037, at the CH4 buses more than 10 km from
+  every other H2 bus (for methanisation, without industrial demand),
 * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
   these buses are located at the intersection of AC buses and
   potential for H2 saltcavern.
@@ -55,7 +57,7 @@ def insert_hydrogen_buses(scn_name):
         lambda wkb_hex: loads(bytes.fromhex(wkb_hex))
     )
 
-    # only the nodes with a pipeline in the scenario year
+    # only the nodes with a pipeline of the core network in the scenario year
     active = active_h2_grid_nodes(scn_name)
     h2_input["Ort"] = h2_input["Ort"].astype(str).str.strip()
     h2_input = h2_input[h2_input.Ort.isin(active)]
@@ -99,25 +101,24 @@ def insert_hydrogen_buses(scn_name):
         dtype={"geom": Geometry()},
     )
 
-    # insert additional_buses for potential Methanisation to CH4_buses nearby:
+    # insert additional_buses at the nodes without a pipeline nearby:
     h2_buses = h2_buses.to_crs(epsg=32632)
 
-    sql_CH4_buses = f"""
-            SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
-            FROM {targets.tables["hydrogen_buses"]}
-            WHERE carrier = 'CH4'
-            AND scn_name = '{scn_name}' AND country = 'DE'
-            """
-    CH4_buses = gpd.read_postgis(sql_CH4_buses, con=db.engine())
+    h2_nodes = read_h2_grid_nodes().drop_duplicates(subset=["x", "y"])
+    h2_nodes = gpd.GeoDataFrame(
+        h2_nodes[["x", "y"]],
+        geometry=gpd.points_from_xy(h2_nodes.x, h2_nodes.y),
+        crs=4326,
+    ).to_crs(epsg=32632)
 
     additional_H2_buses = []
     H2_coords = np.array([(point.x, point.y) for point in h2_buses.geometry])
     H2_tree = cKDTree(H2_coords)
-    for idx, ch4_bus in CH4_buses.iterrows():
-        ch4_coords = [ch4_bus["geom"].x, ch4_bus["geom"].y]
+    for idx, h2_node in h2_nodes.iterrows():
+        node_coords = [h2_node["geometry"].x, h2_node["geometry"].y]
 
         # filter nearest h2_bus
-        dist, nearest_idx = H2_tree.query(ch4_coords, k=1)
+        dist, nearest_idx = H2_tree.query(node_coords, k=1)
         # critcical distance assumed with 10km based on former ammount of h2_buses
         if dist > 10000:
             # Neuen H2-Bus hinzufügen
@@ -125,18 +126,73 @@ def insert_hydrogen_buses(scn_name):
                 {
                     "scn_name": scn_name,
                     "bus_id": None,
-                    "x": ch4_bus["x"],
-                    "y": ch4_bus["y"],
+                    "x": h2_node["x"],
+                    "y": h2_node["y"],
                     "carrier": "H2",
-                    "geom": ch4_bus["geom"],
+                    "geom": h2_node["geometry"],
                 }
             )
 
-    # only if there are CH4 buses far from the H2_grid buses
     if additional_H2_buses:
         additional_H2_buses = gpd.GeoDataFrame(
-            additional_H2_buses, geometry="geom", crs=CH4_buses.crs
+            additional_H2_buses, geometry="geom", crs=h2_nodes.crs
         )
+    additional_H2_buses = additional_H2_buses.to_crs(epsg=4326)
+
+    additional_H2_buses["bus_id"] = db.next_etrago_id(
+        "bus", len(additional_H2_buses)
+    )
+    # Insert data to db
+    additional_H2_buses.to_postgis(
+        targets.get_table_name("hydrogen_buses"),
+        schema=targets.get_table_schema("hydrogen_buses"),
+        con=db.engine(),
+        if_exists="append",
+        dtype={"geom": Geometry()},
+    )
+
+    # No CH4 buses in Germany in reGon2045
+    if scn_name == "reGon2037":
+        # insert additional_buses for potential Methanisation to CH4_buses nearby
+        # (no voronoi cell, so no industrial demand, see gas_areas):
+        h2_buses = pd.concat(
+            [h2_buses, additional_H2_buses.to_crs(epsg=32632)]
+        )
+
+        sql_CH4_buses = f"""
+                SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
+                FROM {targets.tables["hydrogen_buses"]}
+                WHERE carrier = 'CH4'
+                AND scn_name = '{scn_name}' AND country = 'DE'
+                """
+        CH4_buses = gpd.read_postgis(sql_CH4_buses, con=db.engine())
+
+        additional_H2_buses = []
+        H2_coords = np.array([(point.x, point.y) for point in h2_buses.geometry])
+        H2_tree = cKDTree(H2_coords)
+        for idx, ch4_bus in CH4_buses.iterrows():
+            ch4_coords = [ch4_bus["geom"].x, ch4_bus["geom"].y]
+
+            # filter nearest h2_bus
+            dist, nearest_idx = H2_tree.query(ch4_coords, k=1)
+            # critcical distance assumed with 10km based on former ammount of h2_buses
+            if dist > 10000:
+                # Neuen H2-Bus hinzufügen
+                additional_H2_buses.append(
+                    {
+                        "scn_name": scn_name,
+                        "bus_id": None,
+                        "x": ch4_bus["x"],
+                        "y": ch4_bus["y"],
+                        "carrier": "H2",
+                        "geom": ch4_bus["geom"],
+                    }
+                )
+
+        if additional_H2_buses:
+            additional_H2_buses = gpd.GeoDataFrame(
+                additional_H2_buses, geometry="geom", crs=CH4_buses.crs
+            )
         additional_H2_buses = additional_H2_buses.to_crs(epsg=4326)
 
         additional_H2_buses["bus_id"] = db.next_etrago_id(

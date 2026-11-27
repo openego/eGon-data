@@ -512,7 +512,6 @@ with airflow.DAG(
             dependencies=[
                 create_gas_polygons,
                 industrial_gas_demand,
-                insert_h2_grid,
             ]
         )
 

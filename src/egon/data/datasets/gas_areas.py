@@ -212,7 +212,12 @@ def create_voronoi(scn_name, carrier):
             FROM {sources.tables["egon_etrago_bus"]}
             WHERE scn_name = '{scn_name}'
             AND country = 'DE'
-            AND carrier IN ('{carrier_strings}');
+            AND carrier IN ('{carrier_strings}')
+            -- no cell (no industrial H2 demand) for the H2 buses at CH4 buses
+            AND NOT (carrier = 'H2' AND (x, y) IN (
+                SELECT x, y FROM {sources.tables["egon_etrago_bus"]}
+                WHERE scn_name = '{scn_name}' AND carrier = 'CH4'
+            ));
         """,
     )
 
