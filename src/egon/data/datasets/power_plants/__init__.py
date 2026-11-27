@@ -1408,7 +1408,6 @@ class PowerPlants(Dataset):
             "wind_potential_areas": "supply.egon_re_potential_area_wind",
             "hvmv_substation": "grid.egon_hvmv_substation",
             "electricity_demand": "demand.egon_demandregio_zensus_electricity",
-            "zensus_population": "society.destatis_zensus_population_per_ha",
             "map_zensus_grid_districts": "boundaries.egon_map_zensus_grid_districts",
             "map_grid_boundaries": "boundaries.egon_map_mvgriddistrict_vg250",
             "federal_states": "boundaries.vg250_lan",  # Alias

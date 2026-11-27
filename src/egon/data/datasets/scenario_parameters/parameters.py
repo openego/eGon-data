@@ -1194,6 +1194,7 @@ def gas(scenario):
             "power_to_H2_stack": 138_000,  # [EUR/MW] stack replacement, 16.1% of system CAPEX; source: DEA_RF, sheet '80 AEC 100 MW'
             "power_to_H2_OPEX": 31_000,  # [EUR/MW/a] fixed O&M, 3.6% of CAPEX (stack replacement not included); source: DEA_RF, sheet '80 AEC 100 MW'
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
+            "OCGT_H2_load_near": read_costs(costs, "OCGT", "investment"),  # extendable load-near H2 plants, OCGT as their efficiency
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
             "H2_underground": read_costs(
@@ -1215,6 +1216,7 @@ def gas(scenario):
             "power_to_H2_stack": 13.5,  # stack replacement every 77,200 h / 5,700 full load hours, same method as eGon2035 (85,000 h ~ 15 a); source: DEA_RF, sheet '80 AEC 100 MW'
             "power_to_H2_OPEX": 1,  # given as OPEX/year
             "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
+            "OCGT_H2_load_near": read_costs(costs, "OCGT", "lifetime"),
             "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
             "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
             "H2_underground": read_costs(
@@ -1323,6 +1325,7 @@ def gas(scenario):
             "power_to_H2_OPEX": 0.0275
             * 729_000,  # [EUR/MW/a] fixed O&M, 2.75% of CAPEX (2045 = mean 2040/2050; stack replacement not included); source: DEA_RF, sheet '80 AEC 100 MW'
             "H2_to_power": read_costs(costs, "fuel cell", "investment"),
+            "OCGT_H2_load_near": read_costs(costs, "OCGT", "investment"),  # extendable load-near H2 plants, OCGT as their efficiency
             "CH4_to_H2": read_costs(costs, "SMR", "investment"),
             "H2_to_CH4": read_costs(costs, "methanation", "investment"),
             "H2_underground": read_costs(
@@ -1347,6 +1350,7 @@ def gas(scenario):
             "power_to_H2_stack": 14.9,  # stack replacement every 82,000 h / 5,500 full load hours, same method as eGon2035 (85,000 h ~ 15 a); source: DEA_RF, sheet '80 AEC 100 MW'
             "power_to_H2_OPEX": 1,  # given as OPEX/year
             "H2_to_power": read_costs(costs, "fuel cell", "lifetime"),
+            "OCGT_H2_load_near": read_costs(costs, "OCGT", "lifetime"),
             "CH4_to_H2": read_costs(costs, "SMR", "lifetime"),
             "H2_to_CH4": read_costs(costs, "methanation", "lifetime"),
             "H2_underground": read_costs(

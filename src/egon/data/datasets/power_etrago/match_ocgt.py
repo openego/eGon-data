@@ -58,7 +58,10 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
 
     # create topology column (linestring)
     gdf = link_geom_from_buses(gdf, scn_name)
-    gdf["p_nom_extendable"] = False
+
+    # Load-near hydrogen plants are extendable. The capacity per
+    # federal state is written in egon_scenario_capacities
+    gdf["p_nom_extendable"] = gdf.carrier == "H2_OCGT_load_near"
 
     buses = tuple(
         db.select_dataframe(
@@ -96,6 +99,19 @@ def insert_open_cycle_gas_turbines_per_scenario(scn_name):
 
     # Adjust p_nom
     gdf["p_nom"] = gdf["p_nom"] / gdf["efficiency"]
+
+    # Extendable links: capital cost per MW of fuel (as the VOM) and lifetime
+    if gdf.p_nom_extendable.any():
+        gdf["capital_cost"] = np.where(
+            gdf.p_nom_extendable,
+            scn_params["capital_cost"]["OCGT_H2_load_near"] * gdf.efficiency,
+            0,
+        )
+        gdf["lifetime"] = np.where(
+            gdf.p_nom_extendable,
+            scn_params["lifetime"]["OCGT_H2_load_near"],
+            np.inf,
+        )
 
     # Select next id value
     gdf["link_id"] = db.next_etrago_id("link", len(gdf))

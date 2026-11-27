@@ -3,9 +3,10 @@ The module containing the allocation of the hydrogen power plants of the
 reGon scenarios.
 
 The hydrogen capacity per federal state of the NEP Strom is placed at
-existing power plant sites: conversions of natural gas sites, freed grid
-connections and, in 2045, load-near sites. The method is described in the
-documentation of the gas sector (gas-fired and hydrogen power plants).
+existing power plant sites: conversions of natural gas sites and freed grid
+connections. The rest goes to candidate sites of load-near plants, which
+eTraGo sizes. The method is described in the documentation of the gas
+sector (gas-fired and hydrogen power plants).
 
 """
 
@@ -604,34 +605,6 @@ def join_units(units):
     return ", ".join(sorted(units.dropna()))
 
 
-def population_per_ehv_area():
-    """Population per EHV substation area (Voronoi polygon)
-
-    Returns
-    -------
-    pandas.Series
-        Population per bus_id of the EHV substations
-
-    """
-    sources, _ = load_sources_and_targets("PowerPlants")
-
-    return db.select_dataframe(
-        f"""
-        WITH voronoi AS (
-            SELECT bus_id, ST_Transform(geom, 3035) AS geom
-            FROM {sources.tables['ehv_voronoi']}
-        )
-        SELECT voronoi.bus_id, SUM(zensus.population) AS population
-        FROM voronoi
-        JOIN {sources.tables['zensus_population']} zensus
-        ON ST_Contains(voronoi.geom, zensus.geom_point)
-        WHERE zensus.population > 0
-        GROUP BY voronoi.bus_id
-        """,
-        index_col="bus_id",
-    ).population
-
-
 def pair_by_capacity(capacity, site_capacity, extra_cost=None):
     """
     Pair projects with sites by capacity (linear sum assignment)
@@ -792,77 +765,40 @@ def place_listed_projects(projects, sites):
     return placed.drop(columns=["el_capacity", "in_2037"])
 
 
-def allocate_load_near(extra, sites, listed, year):
+def select_load_near_sites(sites, listed, scn_name):
     """
-    Allocate the hydrogen capacity of a federal state beyond the list
+    Select the candidate sites of the load-near hydrogen power plants
 
     Parameters
     ----------
-    extra : float
-        Capacity to allocate in MW
     sites : geopandas.GeoDataFrame
         Sites of the federal state
     listed : pandas.Series
         Listed hydrogen capacity per site (LokationMastrNummer) in MW
-    year : int
-        Year of the scenario
+    scn_name : str
+        Name of the scenario
 
     Returns
     -------
     pandas.DataFrame
-        Plants with the columns LokationMastrNummer, el_capacity and site
-        ("gas site 2037" or "population")
+        Sites with the columns LokationMastrNummer and site ("gas site 2037"
+        or "existing site")
 
     """
-    plants = []
+    # In 2045 the natural gas sites of 2037 are free
+    gas_site = (
+        sites.gas_2037 > sites.LokationMastrNummer.map(listed).fillna(0)
+    ) & (scn_name == "reGon2045")
+    selected = gas_site | (sites.capacity >= MIN_SITE_CAPACITY)
 
-    if year >= 2045:
-        free = (
-            sites.set_index("LokationMastrNummer")
-            .gas_2037.sub(listed, fill_value=0)
-            .clip(lower=0)
-        )
-        reported = (
-            sites.set_index("LokationMastrNummer")
-            .h2_site_staying.reindex(free.index)
-            .gt(0)
-        )
-        for group in [free[reported], free[~reported]]:
-            group = group[group > 0]
-            if extra <= 1e-3 or group.empty:
-                continue
-            share = min(1, extra / group.sum())
-            plants.append(
-                pd.DataFrame(
-                    {
-                        "LokationMastrNummer": group.index,
-                        "el_capacity": (group * share).values,
-                        "site": "gas site 2037",
-                    }
-                )
-            )
-            extra -= group.sum() * share
-
-    weighted = sites[sites.capacity >= MIN_SITE_CAPACITY]
-    if extra > 1e-3 and weighted.weight.sum() > 0:
-        plants.append(
-            pd.DataFrame(
-                {
-                    "LokationMastrNummer": weighted.LokationMastrNummer.values,
-                    "el_capacity": (
-                        extra * weighted.weight / weighted.weight.sum()
-                    ).values,
-                    "site": "population",
-                }
-            )
-        )
-        extra = 0
-
-    if not plants:
-        return pd.DataFrame(), extra
-
-    plants = pd.concat(plants, ignore_index=True)
-    return plants[plants.el_capacity > 0], extra
+    return pd.DataFrame(
+        {
+            "LokationMastrNummer": sites.LokationMastrNummer[selected],
+            "site": np.where(
+                gas_site[selected], "gas site 2037", "existing site"
+            ),
+        }
+    )
 
 
 def allocate_hydrogen_power_plants():
@@ -900,24 +836,6 @@ def allocate_hydrogen_power_plants():
     )
 
     sites = select_power_plant_sites()
-    ehv_voronoi = db.select_geodataframe(
-        f"SELECT bus_id, geom FROM {sources.tables['ehv_voronoi']}",
-        epsg=4326,
-    )
-    sites = gpd.sjoin(sites, ehv_voronoi, how="left").drop(
-        columns="index_right"
-    )
-    sites = sites.rename(columns={"bus_id": "ehv_bus_id"}).drop_duplicates(
-        "LokationMastrNummer"
-    )
-    # Population weight of the sites of the minimum size, shared between
-    # the sites of the same EHV substation area
-    population = population_per_ehv_area()
-    large = sites.capacity >= MIN_SITE_CAPACITY
-    sites["weight"] = (
-        sites.ehv_bus_id.map(population).fillna(0)
-        / large.groupby(sites.ehv_bus_id).transform("sum").clip(lower=1)
-    ).where(large, 0)
 
     # Placement of the listed projects, the same for all scenarios
     projects = read_nep_hydrogen_projects(sources)
@@ -967,22 +885,18 @@ def allocate_hydrogen_power_plants():
                 )
                 plants.append(state_projects)
 
-            # Load-near plants: the rest of the capacity of the federal
-            # state (2045, or a federal state without listed projects)
-            extra = total - state_projects.el_capacity.sum()
-            if extra > 1e-3:
-                load_near, extra = allocate_load_near(
-                    extra,
-                    state_sites,
-                    state_projects.groupby(
-                        "LokationMastrNummer"
-                    ).el_capacity.sum(),
-                    year,
+            # Load-near plants for the rest of the capacity of the federal
+            # state (2045, or no listed projects): sites only, sized in eTraGo
+            if total - state_projects.el_capacity.sum() > 1e-3:
+                plants.append(
+                    select_load_near_sites(
+                        state_sites,
+                        state_projects.groupby(
+                            "LokationMastrNummer"
+                        ).el_capacity.sum(),
+                        scn,
+                    ).assign(name=None, siting="load-near", el_capacity=0)
                 )
-                if not load_near.empty:
-                    load_near["name"] = None
-                    load_near["siting"] = "load-near"
-                    plants.append(load_near)
 
         if not plants:
             continue
@@ -1001,6 +915,7 @@ def allocate_hydrogen_power_plants():
                 sites[
                     [
                         "LokationMastrNummer",
+                        "capacity",
                         "h2_units",
                         "units_2037",
                         "units_leaving",
@@ -1026,9 +941,14 @@ def allocate_hydrogen_power_plants():
         )
         plants = gpd.GeoDataFrame(plants, geometry="geometry", crs=4326)
 
+        # Load-near plants: voltage level of the existing site
         plants["voltage_level"] = None
         plants["voltage_level"] = assign_voltage_level_by_capacity(
-            plants.rename(columns={"el_capacity": "Nettonennleistung"})
+            plants.assign(
+                Nettonennleistung=plants.el_capacity.mask(
+                    plants.siting == "load-near", plants.capacity
+                )
+            )
         )
         plants = assign_bus_id(plants, sources, drop_missing=True)
 
@@ -1041,8 +961,8 @@ def allocate_hydrogen_power_plants():
                             "NEP Strom 2037/2045 (2025) list of power plants "
                             "(Annex 1 of the approval of the Szenariorahmen)"
                             if row.siting == "listed"
-                            else "NEP Strom 2037/2045 (2025) capacity per "
-                            "federal state minus listed projects"
+                            else "sized in eTraGo: NEP Strom 2037/2045 (2025) "
+                            "capacity per federal state minus listed projects"
                         ),
                         "siting": row.siting,
                         "site": row.site,

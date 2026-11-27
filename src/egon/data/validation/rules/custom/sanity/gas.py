@@ -712,14 +712,22 @@ class ElectrolyserCapPerState(_GasRule):
 
     """
 
+    # Links, their electrical potential, AC bus, NEP carrier and name
+    carriers = ["power_to_H2"]
+    potential = "l.p_nom_max"
+    ac_bus = "l.bus0"
+    nep_carrier = "power_to_H2"
+    plants = "electrolyser"
+
     def get_query(self, ctx):
+        carriers = "', '".join(self.carriers)
         return f"""
             WITH electrolysers AS (
-                SELECT nearest.nuts, sum(l.p_nom_max) AS p_nom_max
+                SELECT nearest.nuts, sum({self.potential}) AS p_nom_max
                 FROM grid.egon_etrago_link l
-                {_nearest_state_sql("l.bus0")}
+                {_nearest_state_sql(self.ac_bus)}
                 WHERE l.scn_name = :scenario
-                AND l.carrier = 'power_to_H2'
+                AND l.carrier IN ('{carriers}')
                 GROUP BY nearest.nuts
             )
             SELECT json_agg(states) AS states
@@ -731,8 +739,7 @@ class ElectrolyserCapPerState(_GasRule):
                 FROM supply.egon_scenario_capacities c
                 LEFT JOIN electrolysers e ON e.nuts = c.nuts
                 WHERE c.scenario_name = :scenario
-                AND c.component = 'link'
-                AND c.carrier = 'power_to_H2'
+                AND c.carrier = '{self.nep_carrier}'
             ) AS states
             """
 
@@ -741,9 +748,13 @@ class ElectrolyserCapPerState(_GasRule):
         if not states:
             return self.result(
                 False,
-                "no NEP electrolyser capacity (power_to_H2) in "
+                f"no NEP {self.plants} capacity ({self.nep_carrier}) in "
                 "supply.egon_scenario_capacities",
             )
+
+        # An unlimited potential comes from json_agg as the string "Infinity"
+        for s in states:
+            s["p_nom_max"] = float(s["p_nom_max"])
 
         below = [
             f"{s['nuts']} {s['p_nom_max']:,.0f} < {s['capacity']:,.0f} MW"
@@ -755,15 +766,46 @@ class ElectrolyserCapPerState(_GasRule):
         return self.result(
             not below,
             (
-                f"electrolyser potential below the NEP capacity: "
+                f"{self.plants} potential below the NEP capacity: "
                 f"{'; '.join(below)}"
                 if below
-                else f"{len(states)} federal states: electrolyser potential "
+                else f"{len(states)} federal states: {self.plants} potential "
                 f"{observed:,.0f} MW, NEP capacity {expected:,.0f} MW"
             ),
             observed=observed,
             expected=expected,
         )
+
+
+class HydrogenPlantCapPerState(ElectrolyserCapPerState):
+    """
+    Hydrogen power plant potential per federal state vs the NEP capacity
+
+    The listed plants are fixed, the load-near plants extendable without an
+    upper limit; eTraGo builds the NEP capacity per federal state
+    (``hydrogen`` in ``supply.egon_scenario_capacities``). Every state needs
+    at least that much electrical capacity, fixed plus ``p_nom_max``, so the
+    NEP capacity is reachable where the fixed plants or load-near plants are.
+
+    Parameters
+    ----------
+    table : str
+        "grid.egon_etrago_link"
+    rule_id : str
+        Unique identifier for this validation rule
+    scenario : str
+        Scenario to check
+
+    """
+
+    carriers = [c for c in OCGT_CARRIERS if c.startswith("H2_")]
+    potential = (
+        "CASE WHEN l.p_nom_extendable THEN l.p_nom_max ELSE l.p_nom END"
+        " * l.efficiency"
+    )
+    ac_bus = "l.bus1"
+    nep_carrier = "hydrogen"
+    plants = "hydrogen power plant"
 
 
 def _connected_parts(nodes, edges):
@@ -1150,6 +1192,14 @@ def final_validation_rules():
             *for_each_scenario(
                 OcgtMatchesPowerPlants,
                 "SANITY_GAS_FINAL_OCGT_POWER_PLANTS",
+                table="grid.egon_etrago_link",
+            ),
+            # reGon2045 only: in 2037 all hydrogen plants are fixed, some of
+            # them at AC buses of a neighbouring federal state
+            *for_each_scenario(
+                HydrogenPlantCapPerState,
+                "SANITY_GAS_FINAL_H2_PLANTS_NEP_CAP",
+                scenarios=("reGon2045",),
                 table="grid.egon_etrago_link",
             ),
         ],
