@@ -159,7 +159,11 @@ class Storages(Dataset):
                             "scenario",
                         ],
                         value_set_columns={
-                            "carrier": ["BESS", "home_battery", "pumped_hydro"],
+                            "carrier": [
+                                "battery",
+                                "home_battery",
+                                "pumped_hydro",
+                            ],
                             "scenario": [
                                 "eGon2035",
                                 "reGon2037",
@@ -851,13 +855,14 @@ def allocate_battery_storage(scn_name):
       * 'home_battery' (voltage_level 6, 7 - LV / building-connected) - carried
         forward into all scenarios, aged with the scenario-specific assumed
         battery storage lifetime (see determine_end_of_life_gens() below).
-      * 'BESS' (voltage_level 1-5 - MV and above, grid-scale battery energy
-        storage systems, not tied to individual buildings) - like
+      * 'battery' (voltage_level 1-5 - MV and above, grid-scale battery
+        energy storage systems (BESS), not tied to individual buildings;
+        same carrier name as the foreign batteries) - like
         home_battery, real capacity is now aged and carried forward into
-        every scenario. A modeled/residual BESS component analogous to
+        every scenario. A modeled/residual grid-scale component analogous to
         home_batteries_per_scenario() (target minus real capacity,
         distributed spatially) is deliberately not implemented (decision
-        2026-08-31): eTraGo already allows extendable BESS capacity above
+        2026-08-31): eTraGo already allows extendable battery capacity above
         this real-capacity floor at every substation bus (see
         storages_etrago.extendable_batteries_per_scenario()), so further
         capacity growth is left to eTraGo's own cost optimization rather
@@ -897,7 +902,7 @@ def allocate_battery_storage(scn_name):
     # "in Betrieb" but that are statistically past their expected lifetime.
     lifetime = pd.Timedelta(
         get_sector_parameters("electricity", scn_name)["lifetime"][
-            "BESS storage"
+            "battery storage"
         ]
         * 365,
         unit="D",
@@ -911,7 +916,7 @@ def allocate_battery_storage(scn_name):
     ).rename(columns={"capacity": "el_capacity"})
     mastr = mastr.loc[~mastr.end_of_life].drop(columns=["age", "end_of_life"])
 
-    mastr["carrier"] = "BESS"
+    mastr["carrier"] = "battery"
     mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"
 
     mastr["scenario"] = scn_name
@@ -920,7 +925,7 @@ def allocate_battery_storage(scn_name):
 
     db.execute_sql(f"""
         DELETE FROM supply.egon_storages
-        WHERE carrier IN ('BESS', 'home_battery')
+        WHERE carrier IN ('battery', 'home_battery')
         AND scenario = '{scn_name}'
         AND sources ->> 'el_capacity' = 'MaStR';""")
 
@@ -961,8 +966,8 @@ def allocate_pumped_hydro_scn():
 
 
 def allocate_other_storage_units():
-    # Both 'BESS' and 'home_battery' are aged and carried forward into
-    # every scenario now (real MaStR capacity only for BESS - no modeled
+    # Both 'battery' and 'home_battery' are aged and carried forward into
+    # every scenario now (real MaStR capacity only for 'battery' - no modeled
     # residual component yet, see #1478).
     for scn in config.settings()["egon-data"]["--scenarios"]:
         allocate_battery_storage(scn_name=scn)

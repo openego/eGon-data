@@ -25,7 +25,7 @@ class StorageEtrago(Dataset):
     sized from real (MaStR) plus modeled capacity assumptions taken from an
     other interim table: home batteries are fixed at their allocated
     capacity (not extendable, no investment decision left to eTraGo), while
-    grid-scale battery storage (BESS) is added as an extendable investment
+    grid-scale battery storage (carrier 'battery') is added as an extendable investment
     option with that allocated capacity as a minimum floor eTraGo may build
     beyond. For all batteries assumptions on technical parameters are added.
     The resulting data is written to the corresponding tables in the data base.
@@ -115,10 +115,9 @@ def extendable_batteries_per_scenario(scenario):
     engine = db.engine()
 
     # Delete outdated data on extendable batteries inside Germany from
-    # database - covers 'BESS'/'home_battery' (the two carriers this
-    # function now writes) plus the old undifferentiated
-    # 'battery' carrier it used to write, to clean up stale rows left over
-    # from before this split.
+    # database - covers 'battery'/'home_battery' (the two carriers this
+    # function writes) plus 'BESS', the former name of the grid-scale
+    # battery carrier, to clean up stale rows left over from before #1582.
     db.execute_sql(f"""
         DELETE FROM {StorageEtrago.targets.tables['storage']}
         WHERE carrier IN ('battery', 'BESS', 'home_battery')
@@ -141,7 +140,7 @@ def extendable_batteries_per_scenario(scenario):
         """)
 
     # Efficiency/max_hours/standing_loss/cyclic_state_of_charge are shared
-    # between BESS and home_battery - identical in the source cost data,
+    # between battery and home_battery - identical in the source cost data,
     # Only capital_cost/lifetime differ per carrier.
     efficiency = get_sector_parameters("electricity", scenario)["efficiency"][
         "battery"
@@ -152,9 +151,9 @@ def extendable_batteries_per_scenario(scenario):
     lifetime = get_sector_parameters("electricity", scenario)["lifetime"]
 
     carriers = {
-        "BESS": {
-            "capital_cost": capital_cost["BESS"],
-            "lifetime": lifetime["BESS storage"],
+        "battery": {
+            "capital_cost": capital_cost["battery"],
+            "lifetime": lifetime["battery storage"],
         },
         "home_battery": {
             "capital_cost": capital_cost["home_battery"],
@@ -203,7 +202,7 @@ def extendable_batteries_per_scenario(scenario):
             "allocated_capacity"
         ].fillna(0)
 
-        if carrier == "BESS":
+        if carrier == "battery":
             # Grid-scale batteries stay a pure investment option: no fixed
             # capacity, eTraGo may build any amount above this floor.
             batteries["p_nom_extendable"] = True
