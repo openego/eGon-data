@@ -23,27 +23,21 @@ import pandas as pd
 from egon.data import db
 from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.hydrogen_etrago.nep2025 import (
-    DROPPED_KERNNETZ_MEASURES,
     NEP_H2_HHV_PER_LHV,
-    NEP_H2_MEASURES_2037,
-    NEP_H2_MEASURES_2037_NODES,
     NEP_H2_MEASURES_CRITERIA,
-    NEP_H2_MEASURES_YEAR,
-    NEP_H2_NETWORK_2045_NODES,
-    NEP_H2_NETWORK_YEAR,
-    NEP_H2_OTHER_IMPORT_SITES,
-    NEP_H2_STORAGE_DUNKELFLAUTE,
-    NEP_H2_STORAGE_DUNKELFLAUTE_STATES,
     NEP_SCENARIO_2045,
     kernnetz_commissioning_year,
     nep_h2_border_points,
     nep_h2_lng_terminals,
+    nep_h2_measures_2037,
     nep_h2_measures_commissioning,
     nep_h2_measures_criterion,
     nep_h2_network_2045,
     nep_h2_other_import_projects,
+    nep_h2_other_import_sites,
     nep_h2_other_imports,
     nep_h2_storage,
+    nep_h2_storage_dunkelflaute,
     nep_h2_storage_projects,
     nep_kernnetz_dn_2045,
     nep_kernnetz_not_in_2045,
@@ -268,24 +262,10 @@ def insert_h2_pipelines(scn_name):
     connect_h2_grid_islands(scn_name, sources, targets)
 
 
-# Nodes of the Kernnetz lists missing in h2_grid_nodes.csv: name, x, y
-# (coordinates of the municipality, assumption)
-MISSING_H2_GRID_NODES = {
-    # Rastede - Wiefelstede (Neubau, 8.3 km)
-    "Wiefelstede": (8.1167, 53.2500),
-    # Glehn - Niederaußem (Umstellung, 13.4 km), Bergheim-Niederaußem
-    "Niederaußem": (6.6667, 50.9833),
-    # Coesfeld - Kanal Kreuzung Nord (bei Amelsbüren) (Umstellung, 33.2 km)
-    "Coesfeld": (7.1667, 51.9500),
-}
-
-
 def read_h2_grid_nodes():
     """
-    Nodes of the H2 core network
-
-    The nodes of h2_grid_nodes.csv of the data bundle plus
-    :py:data:`MISSING_H2_GRID_NODES`.
+    Nodes of the H2 grid (h2_grid_nodes.csv of the data bundle): the core
+    network and the end points of the NEP sections
 
     Returns
     -------
@@ -300,15 +280,7 @@ def read_h2_grid_nodes():
         / "h2_grid_nodes.csv"
     )
     nodes["Ort"] = nodes["Ort"].astype(str).str.strip()
-    missing = pd.DataFrame(
-        [
-            {"Ort": name, "geom": Point(x, y).wkb_hex, "x": x, "y": y}
-            for name, (x, y) in MISSING_H2_GRID_NODES.items()
-            if name not in set(nodes["Ort"])
-        ],
-        columns=["Ort", "geom", "x", "y"],
-    )
-    return pd.concat([nodes, missing], ignore_index=True)
+    return nodes
 
 
 def select_h2_pipelines(df, sheet, scn_name, h2_bus_location):
@@ -367,12 +339,11 @@ def select_h2_pipelines(df, sheet, scn_name, h2_bus_location):
             df["Endpunkt\n(Ort)"] == "Osdorfer Straße", "Endpunkt\n(Ort)"
         ] = "Berlin- Lichterfelde"
 
-    # Measures dropped by the NEP and measures commissioned after the
-    # scenario year (year of the NEP where known) are not inserted
-    df = df[~df["Antrags-ID"].isin(DROPPED_KERNNETZ_MEASURES)]
+    # Measures commissioned after the scenario year (year of the NEP where
+    # known) are not inserted
     # The network 2045 builds on the modelling result 2037 of its scenario,
     # which drops or re-dimensions some measures
-    if get_scenario_year(scn_name) >= NEP_H2_NETWORK_YEAR:
+    if scn_name == "reGon2045":
         df = df[~df["Antrags-ID"].isin(nep_kernnetz_not_in_2045())]
         for measure, dn in nep_kernnetz_dn_2045().items():
             df.loc[df["Antrags-ID"] == measure, "Nenndurchmesser \n(DN)"] = dn
@@ -736,9 +707,11 @@ def nep_h2_sections(scn_name):
     Returns
     -------
     list of dict
-        Sections with the keys label, start, end, kind, length_km, dn, dp,
+        Sections with the keys label, start, end, length_km, dn, dp,
         build_year, start_xy and end_xy (lon, lat)
     """
+    nodes = read_h2_grid_nodes()
+    location = dict(zip(nodes["Ort"], zip(nodes["x"], nodes["y"])))
     year = get_scenario_year(scn_name)
     sections = []
     sections += [
@@ -746,36 +719,33 @@ def nep_h2_sections(scn_name):
             "label": nep_id,
             "start": start,
             "end": end,
-            "kind": kind,
             "length_km": length_km,
             "dn": dn,
             "dp": dp,
             "build_year": nep_h2_measures_commissioning().get(
-                nep_id, NEP_H2_MEASURES_YEAR
+                nep_id, commissioning
             ),
-            "start_xy": NEP_H2_MEASURES_2037_NODES[start],
-            "end_xy": NEP_H2_MEASURES_2037_NODES[end],
+            "start_xy": location[start],
+            "end_xy": location[end],
         }
-        for nep_id, start, end, kind, length_km, dn, dp in (
-            NEP_H2_MEASURES_2037
+        for nep_id, start, end, length_km, dn, dp, commissioning in (
+            nep_h2_measures_2037()
         )
         if nep_h2_measures_criterion().get(nep_id) in NEP_H2_MEASURES_CRITERIA
-        and year
-        >= nep_h2_measures_commissioning().get(nep_id, NEP_H2_MEASURES_YEAR)
+        and year >= nep_h2_measures_commissioning().get(nep_id, commissioning)
     ]
-    if year >= NEP_H2_NETWORK_YEAR:
+    if scn_name == "reGon2045":
         sections += [
             {
                 "label": f"A6-{number}",
                 "start": start,
                 "end": end,
-                "kind": kind,
                 "length_km": length_km,
                 "dn": dn,
                 "dp": dp,
-                "build_year": NEP_H2_NETWORK_YEAR,
-                "start_xy": NEP_H2_NETWORK_2045_NODES[start],
-                "end_xy": NEP_H2_NETWORK_2045_NODES[end],
+                "build_year": year,
+                "start_xy": location[start],
+                "end_xy": location[end],
             }
             for number, start, end, kind, length_km, dn, dp, scenarios in (
                 nep_h2_network_2045()
@@ -915,14 +885,8 @@ def insert_nep_h2_sections(scn_name, sources, targets):
         bus_km = metric_buses[bus0].distance(metric_buses[bus1]) / 1000
         if bus_km > 2 * section["length_km"] + H2_NODE_SNAP_KM:
             continue
-        cost_key = (
-            "H2_pipeline_retrofit"
-            if section["kind"] == "conversion"
-            and "H2_pipeline_retrofit" in scn_params["overnight_cost"]
-            else "H2_pipeline"
-        )
         p_nom = calculate_H2_capacity(section["dp"], section["dn"])
-        lifetime = scn_params["lifetime"][cost_key]
+        lifetime = scn_params["lifetime"]["H2_pipeline"]
         line = LineString([buses.at[bus0, "geom"], buses.at[bus1, "geom"]])
         links.append(
             {
@@ -938,7 +902,7 @@ def insert_nep_h2_sections(scn_name, sources, targets):
                 "p_min_pu": -1,
                 "lifetime": lifetime,
                 "capital_cost": annualize_capital_costs(
-                    scn_params["overnight_cost"][cost_key]
+                    scn_params["overnight_cost"]["H2_pipeline"]
                     * section["length_km"],
                     lifetime,
                     interest_rate,
@@ -1278,20 +1242,14 @@ def nep_h2_storage_rates(scn_name):
         Injection capacity as a share of the withdrawal capacity
 
     """
-    nep_year = (
-        NEP_H2_NETWORK_YEAR
-        if get_scenario_year(scn_name) >= NEP_H2_NETWORK_YEAR
-        else 2037
-    )
+    nep_year = get_scenario_year(scn_name)
     withdrawal, injection = nep_h2_storage()[nep_year]
     projects = pd.Series(nep_h2_storage_projects()[nep_year], dtype=float)
     rates = withdrawal * projects / projects.sum()
-    dunkelflaute = NEP_H2_STORAGE_DUNKELFLAUTE.get(nep_year, 0)
+    dunkelflaute = nep_h2_storage_dunkelflaute().get(nep_year)
     if dunkelflaute:
-        extra = pd.Series(
-            dunkelflaute / len(NEP_H2_STORAGE_DUNKELFLAUTE_STATES),
-            index=NEP_H2_STORAGE_DUNKELFLAUTE_STATES,
-        )
+        extra_withdrawal, states = dunkelflaute
+        extra = pd.Series(extra_withdrawal / len(states), index=states)
         rates = rates.add(extra, fill_value=0)
     total = rates.sum()
 
@@ -1452,8 +1410,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
 
     nodes = read_h2_grid_nodes()
     location = {
-        **NEP_H2_NETWORK_2045_NODES,
-        **{name: (x, y) for name, x, y in zip(nodes.Ort, nodes.x, nodes.y)},
+        name: (x, y) for name, x, y in zip(nodes.Ort, nodes.x, nodes.y)
     }
     german_metric = _to_metric(german_buses)
     abroad_metric = _to_metric(abroad_buses)
@@ -1462,7 +1419,6 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     lifetime = scn_params["lifetime"]["H2_pipeline"]
     overnight_cost = scn_params["overnight_cost"]["H2_pipeline"]
     interest_rate = get_sector_parameters("global", scn_name)["interest_rate"]
-    year_2045 = get_scenario_year(scn_name) >= NEP_H2_NETWORK_YEAR
 
     links = []
     for (
@@ -1476,7 +1432,9 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         exit_2045,
     ) in nep_h2_border_points():
         entry, exit_ = (
-            (entry_2045, exit_2045) if year_2045 else (entry_2037, exit_2037)
+            (entry_2045, exit_2045)
+            if scn_name == "reGon2045"
+            else (entry_2037, exit_2037)
         )
         # GWh/h (Brennwert) -> MW (lower heating value)
         entry, exit_ = (
@@ -1629,7 +1587,6 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
         if p_nom > 0
     ]
 
-    year_2045 = get_scenario_year(scn_name) >= NEP_H2_NETWORK_YEAR
     german_buses = db.select_geodataframe(
         f"""
         SELECT bus_id, geom FROM {sources.tables["buses"]}
@@ -1647,7 +1604,7 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
     for terminal, node, entry_2037, entry_2045 in nep_h2_lng_terminals():
         # GWh/h (Brennwert) -> MW (lower heating value)
         entry = (
-            (entry_2045 if year_2045 else entry_2037)
+            (entry_2045 if scn_name == "reGon2045" else entry_2037)
             * 1000
             / NEP_H2_HHV_PER_LHV
         )
@@ -1665,10 +1622,11 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
 
     # Other imports (LH2 and derivatives) at the sites of the market survey
     if not german_buses.empty:
-        nep_year = NEP_H2_NETWORK_YEAR if year_2045 else 2037
+        nep_year = get_scenario_year(scn_name)
         # States without a site (Baden-Württemberg, 0.1 MW) are left out
         projects = pd.Series(nep_h2_other_import_projects()[nep_year])
-        projects = projects[projects.index.isin(NEP_H2_OTHER_IMPORT_SITES)]
+        sites_of = nep_h2_other_import_sites()
+        projects = projects[projects.index.isin(sites_of)]
         other = (
             nep_h2_other_imports()[nep_year]
             * 1000
@@ -1677,10 +1635,10 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
             / projects.sum()
         )
         for state, p_nom in other.items():
-            sites = NEP_H2_OTHER_IMPORT_SITES[state]
-            for site, (x, y) in sites.items():
+            sites = sites_of[state]
+            for site in sites:
                 point = _to_metric(
-                    gpd.GeoSeries([Point(x, y)], crs=4326)
+                    gpd.GeoSeries([Point(location[site])], crs=4326)
                 ).iloc[0]
                 imports.append(
                     {

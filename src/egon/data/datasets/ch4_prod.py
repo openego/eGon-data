@@ -24,6 +24,7 @@ import pandas as pd
 from egon.data import config, db
 from egon.data.config import settings
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
+from egon.data.datasets.hydrogen_etrago.h2_grid import read_h2_grid_nodes
 from egon.data.datasets.hydrogen_etrago.nep2025 import (
     nep_ch4_lng_terminals,
     nep_ch4_lng_use,
@@ -425,8 +426,13 @@ def load_LNG_generators(scn_name):
     use = pd.Series(nep_ch4_lng_use())
     share = np.interp(get_scenario_year(scn_name), use.index, use.values)
 
+    nodes = read_h2_grid_nodes().set_index("Ort")
     terminals = pd.DataFrame(
-        nep_ch4_lng_terminals(), columns=["name", "x", "y", "capacity"]
+        [
+            (name, nodes.at[name, "x"], nodes.at[name, "y"], capacity)
+            for name, capacity in nep_ch4_lng_terminals().items()
+        ],
+        columns=["name", "x", "y", "capacity"],
     )
     terminals = gpd.GeoDataFrame(
         terminals,

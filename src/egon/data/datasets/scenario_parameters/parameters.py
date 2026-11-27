@@ -1292,7 +1292,6 @@ def gas(scenario):
         interest_rate = global_settings(scenario)["interest_rate"]  # [p.u.]
 
         parameters["main_gas_carrier"] = "H2"
-        parameters["retrofitted_CH4pipeline-to-H2pipeline_share"] = 0.86
 
         # Insert efficiencies in p.u.
         parameters["efficiency"] = {
@@ -1328,8 +1327,8 @@ def gas(scenario):
                 costs, "H2 (g) pipeline", "investment"
             ),  # [EUR/MW/km]
             "H2_pipeline_retrofit": read_costs(
-                costs, "H2 (g) pipeline repurposed", "investment"
-            ),  # [EUR/MW/km]
+                costs, "H2 (g) pipeline repurposed", "FOM"
+            ),
             "Heat_exchanger": 25_000,  # [EUR/MW_th] cost assumption for one additional heat_exchanger; source: project internal cost assumption by Fraunhofer ISE
             "Heat_pipeline": 400_000,  # [EUR/MW/km]; average value for DN100-pipeline; source: L. Zimmermann, MODELLIERUNG DER ABWÄRMENUTZUNG VON ELEKTROLYSEUREN IN DEUTSCHLAND FÜR EINE TECHNO - ÖKONOMISCHE OPTIMIERUNG EINES SEKTOR - GEKOPPELTEN ENERGIESYSTEM, 2024
         }
