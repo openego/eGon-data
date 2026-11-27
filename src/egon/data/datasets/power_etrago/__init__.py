@@ -4,6 +4,7 @@ The central module containing all code dealing with open cycle gas turbine
 
 from egon.data.datasets import Dataset, DatasetSources, DatasetTargets
 from egon.data.datasets.power_etrago.match_ocgt import (
+    insert_hydrogen_chp_heat,
     insert_open_cycle_gas_turbines,
 )
 
@@ -13,10 +14,13 @@ class OpenCycleGasTurbineEtrago(Dataset):
     Insert the open cycle gas turbine links into the database
 
     Insert the open cycle gas turbine links into the database by using
-    the function :py:func:`insert_open_cycle_gas_turbines <egon.data.datasets.power_etrago.match_ocgt.insert_open_cycle_gas_turbines>`.
+    the function :py:func:`insert_open_cycle_gas_turbines <egon.data.datasets.power_etrago.match_ocgt.insert_open_cycle_gas_turbines>`
+    and the heat links of the hydrogen power plants with CHP by using
+    :py:func:`insert_hydrogen_chp_heat <egon.data.datasets.power_etrago.match_ocgt.insert_hydrogen_chp_heat>`.
 
     *Dependencies*
-      * :py:class:`GasAreaseGon2035 <egon.data.datasets.gas_areas.GasAreaseGon2035>`
+      * :py:class:`ChpEtrago <egon.data.datasets.chp_etrago.ChpEtrago>`
+      * :py:class:`GasAreas <egon.data.datasets.gas_areas.GasAreas>`
       * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
       * :py:class:`PowerPlants <egon.data.datasets.power_plants.PowerPlants>`
       * :py:class:`mastr_data_setup <egon.data.datasets.mastr.mastr_data_setup>`
@@ -29,11 +33,12 @@ class OpenCycleGasTurbineEtrago(Dataset):
     #:
     name: str = "OpenCycleGasTurbineEtrago"
     #:
-    version: str = "0.0.4"
+    version: str = "0.0.5"
 
     sources = DatasetSources(
         tables={
             "power_plants": "supply.egon_power_plants",
+            "district_heating_areas": "demand.egon_district_heating_areas",
             "etrago_bus": "grid.egon_etrago_bus",
             "etrago_link": "grid.egon_etrago_link",
         }
@@ -50,5 +55,5 @@ class OpenCycleGasTurbineEtrago(Dataset):
             name=self.name,
             version=self.version,
             dependencies=dependencies,
-            tasks=(insert_open_cycle_gas_turbines,),
+            tasks=(insert_open_cycle_gas_turbines, insert_hydrogen_chp_heat),
         )

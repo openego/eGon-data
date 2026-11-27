@@ -1,24 +1,26 @@
 """
-The central module containing all code dealing with the hydrogen buses
+The central module containing all code dealing with the hydrogen buses.
 
 In this module, the functions allowing to create the H2 buses in Germany
-for eTraGo are to be found.
-The H2 buses in the neighbouring countries (only present in eGon100RE)
-are defined in :py:mod:`pypsaeursec <egon.data.datasets.pypsaeursec>`.
-In both scenarios, there are two types of H2 buses in Germany:
-  * H2 buses: defined in :py:func:`insert_H2_buses_from_CH4_grid`,
-    these buses are located at the places than the CH4 buses.
-  * H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
-    these buses are located at the intersection of AC buses and
-    potential for H2 saltcavern.
+for eTraGo are to be found. There are three types of H2 buses in Germany,
+created by :py:func:`insert_hydrogen_buses`:
+
+* H2_grid buses: nodes of the hydrogen core network and of the NEP
+  sections with a pipeline in the scenario year,
+* H2 buses: at the other nodes of the list more than 10 km from every
+  H2_grid bus and, in reGon2037, at the CH4 buses more than 10 km from
+  every other H2 bus (for methanisation, without industrial demand),
+* H2_saltcavern buses: defined in :py:func:`insert_H2_buses_from_saltcavern`,
+  these buses are located at the intersection of AC buses and
+  potential for H2 saltcavern.
 
 """
 
-from pathlib import Path
 
 from geoalchemy2 import Geometry
 from scipy.spatial import cKDTree
 from shapely.wkb import loads
+from sqlalchemy import inspect
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -28,6 +30,11 @@ from egon.data.datasets import load_sources_and_targets
 from egon.data.datasets.etrago_helpers import (
     finalize_bus_insertion,
     initialise_bus_insertion,
+)
+from egon.data.datasets.hydrogen_etrago.h2_grid import (
+    active_h2_grid_nodes,
+    nep_h2_nodes,
+    read_h2_grid_nodes,
 )
 
 
@@ -45,14 +52,24 @@ def insert_hydrogen_buses(scn_name):
     """
     sources, targets = load_sources_and_targets("HydrogenBusEtrago")
 
-    h2_input = pd.read_csv(
-        Path(".")
-        / "data_bundle_egon_data"
-        / "hydrogen_network"
-        / "h2_grid_nodes.csv"
-    )
+    h2_input = read_h2_grid_nodes()
     h2_input.geom = h2_input.geom.apply(
         lambda wkb_hex: loads(bytes.fromhex(wkb_hex))
+    )
+
+    # only the nodes with a pipeline of the core network in the scenario year
+    active = active_h2_grid_nodes(scn_name)
+    h2_input["Ort"] = h2_input["Ort"].astype(str).str.strip()
+    h2_input = h2_input[h2_input.Ort.isin(active)]
+    # places with two names and the same coordinates are one bus
+    h2_input = h2_input.drop_duplicates(subset=["x", "y"]).reset_index(
+        drop=True
+    )
+
+    # nodes of the sections of the hydrogen network of the NEP beyond the
+    # core network
+    h2_input = pd.concat(
+        [h2_input, nep_h2_nodes(h2_input, scn_name)], ignore_index=True
     )
 
     target_buses = {
@@ -84,25 +101,24 @@ def insert_hydrogen_buses(scn_name):
         dtype={"geom": Geometry()},
     )
 
-    # insert additional_buses for potential Methanisation to CH4_buses nearby:
+    # insert additional_buses at the nodes without a pipeline nearby:
     h2_buses = h2_buses.to_crs(epsg=32632)
 
-    sql_CH4_buses = f"""
-            SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
-            FROM {targets.tables["hydrogen_buses"]}
-            WHERE carrier = 'CH4'
-            AND scn_name = '{scn_name}' AND country = 'DE'
-            """
-    CH4_buses = gpd.read_postgis(sql_CH4_buses, con=db.engine())
+    h2_nodes = read_h2_grid_nodes().drop_duplicates(subset=["x", "y"])
+    h2_nodes = gpd.GeoDataFrame(
+        h2_nodes[["x", "y"]],
+        geometry=gpd.points_from_xy(h2_nodes.x, h2_nodes.y),
+        crs=4326,
+    ).to_crs(epsg=32632)
 
     additional_H2_buses = []
     H2_coords = np.array([(point.x, point.y) for point in h2_buses.geometry])
     H2_tree = cKDTree(H2_coords)
-    for idx, ch4_bus in CH4_buses.iterrows():
-        ch4_coords = [ch4_bus["geom"].x, ch4_bus["geom"].y]
+    for idx, h2_node in h2_nodes.iterrows():
+        node_coords = [h2_node["geometry"].x, h2_node["geometry"].y]
 
         # filter nearest h2_bus
-        dist, nearest_idx = H2_tree.query(ch4_coords, k=1)
+        dist, nearest_idx = H2_tree.query(node_coords, k=1)
         # critcical distance assumed with 10km based on former ammount of h2_buses
         if dist > 10000:
             # Neuen H2-Bus hinzufügen
@@ -110,16 +126,16 @@ def insert_hydrogen_buses(scn_name):
                 {
                     "scn_name": scn_name,
                     "bus_id": None,
-                    "x": ch4_bus["x"],
-                    "y": ch4_bus["y"],
+                    "x": h2_node["x"],
+                    "y": h2_node["y"],
                     "carrier": "H2",
-                    "geom": ch4_bus["geom"],
+                    "geom": h2_node["geometry"],
                 }
             )
 
     if additional_H2_buses:
         additional_H2_buses = gpd.GeoDataFrame(
-            additional_H2_buses, geometry="geom", crs=CH4_buses.crs
+            additional_H2_buses, geometry="geom", crs=h2_nodes.crs
         )
     additional_H2_buses = additional_H2_buses.to_crs(epsg=4326)
 
@@ -134,6 +150,62 @@ def insert_hydrogen_buses(scn_name):
         if_exists="append",
         dtype={"geom": Geometry()},
     )
+
+    # No CH4 buses in Germany in reGon2045
+    if scn_name == "reGon2037":
+        # insert additional_buses for potential Methanisation to CH4_buses nearby
+        # (no voronoi cell, so no industrial demand, see gas_areas):
+        h2_buses = pd.concat(
+            [h2_buses, additional_H2_buses.to_crs(epsg=32632)]
+        )
+
+        sql_CH4_buses = f"""
+                SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
+                FROM {targets.tables["hydrogen_buses"]}
+                WHERE carrier = 'CH4'
+                AND scn_name = '{scn_name}' AND country = 'DE'
+                """
+        CH4_buses = gpd.read_postgis(sql_CH4_buses, con=db.engine())
+
+        additional_H2_buses = []
+        H2_coords = np.array([(point.x, point.y) for point in h2_buses.geometry])
+        H2_tree = cKDTree(H2_coords)
+        for idx, ch4_bus in CH4_buses.iterrows():
+            ch4_coords = [ch4_bus["geom"].x, ch4_bus["geom"].y]
+
+            # filter nearest h2_bus
+            dist, nearest_idx = H2_tree.query(ch4_coords, k=1)
+            # critcical distance assumed with 10km based on former ammount of h2_buses
+            if dist > 10000:
+                # Neuen H2-Bus hinzufügen
+                additional_H2_buses.append(
+                    {
+                        "scn_name": scn_name,
+                        "bus_id": None,
+                        "x": ch4_bus["x"],
+                        "y": ch4_bus["y"],
+                        "carrier": "H2",
+                        "geom": ch4_bus["geom"],
+                    }
+                )
+
+        if additional_H2_buses:
+            additional_H2_buses = gpd.GeoDataFrame(
+                additional_H2_buses, geometry="geom", crs=CH4_buses.crs
+            )
+        additional_H2_buses = additional_H2_buses.to_crs(epsg=4326)
+
+        additional_H2_buses["bus_id"] = db.next_etrago_id(
+            "bus", len(additional_H2_buses)
+        )
+        # Insert data to db
+        additional_H2_buses.to_postgis(
+            targets.get_table_name("hydrogen_buses"),
+            schema=targets.get_table_schema("hydrogen_buses"),
+            con=db.engine(),
+            if_exists="append",
+            dtype={"geom": Geometry()},
+        )
 
     # insert h2_buses_from_saltcaverns
     hydrogen_buses = initialise_bus_insertion(
@@ -209,10 +281,21 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
     gdf_H2_cavern["scn_name"] = hydrogen_bus_ids["scn_name"]
 
     # Insert data to db
+    map_table = targets.get_table_name("H2_AC_map")
+    map_schema = targets.get_table_schema("H2_AC_map")
+
+    if inspect(db.engine()).has_table(map_table, schema=map_schema):
+        db.execute_sql(
+            f"""
+            DELETE FROM {targets.tables["H2_AC_map"]}
+            WHERE scn_name = '{scn_name}'
+            """
+        )
+
     gdf_H2_cavern.to_sql(
-        targets.get_table_name("H2_AC_map"),
+        map_table,
         db.engine(),
-        schema=targets.get_table_schema("H2_AC_map"),
+        schema=map_schema,
         index=False,
-        if_exists="replace",
+        if_exists="append",
     )

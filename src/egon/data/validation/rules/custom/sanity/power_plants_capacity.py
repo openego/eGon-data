@@ -18,6 +18,9 @@ from egon.data import config
 #: list 51.9 GW vs. input 17.2 GW). 21.4 GW of planned CHP plants without
 #: MaStR id are not inserted at all. Power plants (9.4 GW) plus CHP plants
 #: (17.2 GW) exceed the input by 82 %.
+#:
+#: Hydrogen is left out too: the load-near plants are sites with zero
+#: capacity, sized in eTraGo (extendable links).
 COMPARED_CARRIERS = (
     "wind_onshore",
     "wind_offshore",
@@ -26,7 +29,6 @@ COMPARED_CARRIERS = (
     "reservoir",
     "run_of_river",
     "biomass",
-    "hydrogen",
 )
 
 #: Carriers whose allocated capacity also includes supply.egon_chp_plants

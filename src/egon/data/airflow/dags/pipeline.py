@@ -74,8 +74,7 @@ from egon.data.datasets.hydrogen_etrago import (
 )
 from egon.data.datasets.industrial_gas_demand import (
     IndustrialGasDemand,
-    IndustrialGasDemandeGon100RE,
-    IndustrialGasDemandeGon2035,
+    IndustrialGasDemandScenarios,
 )
 from egon.data.datasets.industrial_sites import MergeIndustrialSites
 from egon.data.datasets.industry import IndustrialDemandCurves
@@ -426,6 +425,7 @@ with airflow.DAG(
         scenario_capacities = ScenarioCapacities(
             dependencies=[
                 data_bundle,
+                mastr_data,
                 run_pypsaeur,
                 setup,
                 vg250,
@@ -455,7 +455,7 @@ with airflow.DAG(
             ]
         )
 
-        # Create gas voronoi eGon2035
+        # Create gas voronoi
         create_gas_polygons = GasAreas(
             dependencies=[setup_etrago, insert_hydrogen_buses, vg250]
         )
@@ -472,8 +472,11 @@ with airflow.DAG(
 
         h2_infrastructure = [insert_h2_grid, insert_hydrogen_buses]
 
+    with TaskGroup(group_id="gas_supply") as gas_supply_group:
         # H2 steel tanks and saltcavern storage
-        insert_H2_storage = HydrogenStoreEtrago(dependencies=h2_infrastructure)
+        insert_H2_storage = HydrogenStoreEtrago(
+            dependencies=[create_gas_polygons, insert_hydrogen_buses]
+        )
 
         # Gas abroad
         gas_abroad_insert_data = GasNeighbours(
@@ -482,11 +485,11 @@ with airflow.DAG(
                 prepare_pypsa_eur,
                 foreign_lines,
                 insert_hydrogen_buses,
+                insert_h2_grid,
                 run_pypsaeur,
             ]
         )
 
-    with TaskGroup(group_id="gas_supply") as gas_supply_group:
         # Import gas production
         gas_production_insert_data = CH4Production(
             dependencies=[create_gas_polygons]
@@ -504,17 +507,11 @@ with airflow.DAG(
             dependencies=[scenario_parameters, data_bundle]
         )
 
-        # Assign industrial gas demand eGon2035
-        IndustrialGasDemandeGon2035(
-            dependencies=[create_gas_polygons, industrial_gas_demand]
-        )
-
-        # Assign industrial gas demand eGon100RE
-        IndustrialGasDemandeGon100RE(
+        # Assign industrial gas demand
+        industrial_gas_demand_scenarios = IndustrialGasDemandScenarios(
             dependencies=[
                 create_gas_polygons,
                 industrial_gas_demand,
-                run_pypsaeur,
             ]
         )
 
@@ -624,10 +621,6 @@ with airflow.DAG(
 
     with TaskGroup(group_id="etrago_input") as etrago_input_group:
 
-        create_ocgt = OpenCycleGasTurbineEtrago(
-            dependencies=[create_gas_polygons, power_plants]
-        )
-
         # Fill eTraGo generators tables
         fill_etrago_generators = Egon_etrago_gen(
             dependencies=[power_plants, weather_data]
@@ -663,6 +656,16 @@ with airflow.DAG(
         # CHP to eTraGo
         chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
 
+        # OCGT to eTraGo
+        create_ocgt = OpenCycleGasTurbineEtrago(
+            dependencies=[
+                chp_etrago,
+                create_gas_polygons,
+                power_plants,
+                insert_hydrogen_buses,
+            ]
+        )
+
         # Storages to eTraGo
         storage_etrago = StorageEtrago(
             dependencies=[pumped_hydro, scenario_parameters, setup_etrago]
@@ -689,10 +692,11 @@ with airflow.DAG(
         group_id="gas_sector_coupling"
     ) as gas_sector_coupling_group:
         # Power-to-H2-to-power chain installations
-        # with oxygen and waste_heat usage
+        # with waste_heat usage
         insert_power_to_h2_installations = HydrogenPowerLinkEtrago(
             dependencies=[
-                h2_infrastructure,
+                *h2_infrastructure,
+                industrial_gas_demand_scenarios,
                 mv_grid_districts,
                 heat_etrago,
                 substation_extraction,
@@ -702,7 +706,7 @@ with airflow.DAG(
 
         # Link between methane grid and respective hydrogen buses
         insert_h2_to_ch4_grid_links = HydrogenMethaneLinkEtrago(
-            dependencies=[h2_infrastructure, insert_power_to_h2_installations]
+            dependencies=[insert_hydrogen_buses]
         )
 
     with TaskGroup(group_id="mobility_demand") as mobility_demand_group:
@@ -822,6 +826,16 @@ with airflow.DAG(
                 cts_demand_buildings,
                 emobility_mit,
                 low_flex_scenario,
+                # Gas datasets that are not upstream of the ones above, so
+                # that the validation report collects their validations
+                gas_abroad_insert_data,
+                gas_production_insert_data,
+                industrial_gas_demand_scenarios,
+                insert_power_to_h2_installations,
+                insert_h2_to_ch4_grid_links,
+                # Links at gas buses checked by the final gas rules
+                chp_etrago,
+                create_ocgt,
             ]
         )
 

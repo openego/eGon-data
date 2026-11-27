@@ -24,8 +24,12 @@ from egon.data.datasets import (
 )
 from egon.data.datasets.power_plants.conventional import (
     match_nep_no_chp,
+    match_nep_no_chp_by_mastr_id,
     select_nep_power_plants,
     select_no_chp_combustion_mastr,
+)
+from egon.data.datasets.power_plants.hydrogen import (
+    allocate_hydrogen_power_plants,
 )
 from egon.data.datasets.power_plants.mastr import (
     EgonPowerPlantsBiomass,
@@ -661,6 +665,12 @@ def allocate_conventional_non_chp_power_plants():
                         "source",
                         "voltage_level",
                     ]
+                )
+
+                # Match plants from NEP list by their MaStR number (NEP
+                # 2025 list only)
+                matched, mastr, nep = match_nep_no_chp_by_mastr_id(
+                    nep, mastr, matched, scn=scn
                 )
 
                 # Match combustion plants of a certain carrier from NEP list
@@ -1353,6 +1363,7 @@ if any(
     tasks = tasks + (
         insert_hydro_biomass,
         allocate_conventional_non_chp_power_plants,
+        allocate_hydrogen_power_plants,
         allocate_other_power_plants,
         {
             wind_onshore.insert,
@@ -1416,6 +1427,10 @@ class PowerPlants(Dataset):
             "mastr_pv": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_solar_cleaned.csv",
             "mastr_storage": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_storage_cleaned.csv",
             "mastr_wind": "./bnetza_mastr/dump_2025-02-09/bnetza_mastr_wind_cleaned.csv",
+            "nep_strom_power_plant_list": "data_bundle_egon_data/NEP/Anlage1_Standorte_Kraftwerke.xlsx",
+            "nep_gas_h2_market_survey": "data_bundle_egon_data/NEP/NEP_gas_H2/SR_Anlage2Gas.xlsx",
+            "nep_gas_power_plant_list": "data_bundle_egon_data/NEP/NEP_gas_H2/SR_Anlage3Gas.xlsx",
+            "bnetza_power_plant_list": "data_bundle_egon_data/NEP/Kraftwerksliste_BNetzA_2026-06-26.xlsx",
             # --- Config/Meta values ---
             "osm_config": "https://download.geofabrik.de/europe/germany-240101.osm.pbf",
             "nep_2035": "NEP_V2021_scnC2035.xlsx",
@@ -1427,6 +1442,12 @@ class PowerPlants(Dataset):
             "egon2021_date_max": "2021-12-31 23:59:00",
             "eGon2035_date_max": "2035-01-01",
             "mastr_geocoding_path": "mastr_geocoding",
+        },
+        urls={
+            "nep_strom_power_plant_list": "https://www.netzentwicklungsplan.de/sites/default/files/2025-05/Anlage1_Standorte_Kraftwerke.xlsx",
+            "nep_gas_h2_market_survey": "https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage2Gas.xlsx",
+            "nep_gas_power_plant_list": "https://ko-nep.de/wp-content/uploads/2024/03/SR_Anlage3Gas.xlsx",
+            "bnetza_power_plant_list": "https://www.bundesnetzagentur.de/DE/Fachthemen/ElektrizitaetundGas/Versorgungssicherheit/Erzeugungskapazitaeten/Kraftwerksliste/_DL/Kraftwerksliste.xlsx",
         },
     )
 
@@ -1519,7 +1540,8 @@ class PowerPlants(Dataset):
     #:
     name: str = "PowerPlants"
     #:
-    version: str = "0.0.42"
+    version: str = "0.0.43"
+
     def __init__(self, dependencies):
         super().__init__(
             name=self.name,
