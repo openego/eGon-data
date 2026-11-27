@@ -213,8 +213,8 @@ def calculate_and_map_saltcavern_storage_potential():
     # select onshore vg250 data
     sources, targets = load_sources_and_targets("HydrogenBusEtrago")
     vg250_data = db.select_geodataframe(
-        f"""
-        SELECT *
+        f""" 
+        SELECT * 
         FROM {sources.tables["vg250_federal_states"]}
         WHERE gf = '4'
         """,

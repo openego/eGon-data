@@ -47,8 +47,7 @@ def insert_h2_to_ch4_to_h2():
         if "status" in scn_name:
             continue
 
-        db.execute_sql(
-            f"""
+        db.execute_sql(f"""
            DELETE FROM {target_links} WHERE "carrier" in ('H2_to_CH4', 'CH4_to_H2')
            AND scn_name = '{scn_name}' AND (bus0 IN (
              SELECT bus_id
@@ -79,10 +78,6 @@ def insert_h2_to_ch4_to_h2():
         H2_buses = gpd.read_postgis(sql_H2_buses, con)
 
         if CH4_buses.empty or H2_buses.empty:
-            print(
-                f"{scn_name}: no German CH4 or H2 buses, no methanisation "
-                "and SMR links are inserted."
-            )
             continue
 
         CH4_to_H2_links = []
@@ -135,10 +130,6 @@ def insert_h2_to_ch4_to_h2():
         ]
 
         if not CH4_to_H2_links:
-            print(
-                f"{scn_name}: no H2 bus within 10 km of a CH4 bus, no "
-                "methanisation and SMR links are inserted."
-            )
             continue
 
         # set crs for geoDataFrame

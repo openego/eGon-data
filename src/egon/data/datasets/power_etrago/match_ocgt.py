@@ -152,10 +152,6 @@ def map_buses(scn_name):
                     AND country = 'DE';"""
         gdf_fuel = db.select_geodataframe(sql_fuel, epsg=4326)
         if gdf_fuel.size == 0:
-            print(
-                f"Warning: {scn_name}: no {bus_carriers} bus for the "
-                f"{plant_carrier} power plants, they are not connected."
-            )
             continue
 
         # Associate each power plant AC bus to the nearest fuel bus

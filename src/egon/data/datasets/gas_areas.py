@@ -23,140 +23,6 @@ from egon.data.metadata import (
 )
 
 
-def create_gas_voronoi_table():
-    """
-    Create gas voronoi table
-    """
-    engine = db.engine()
-    EgonPfHvGasVoronoi.__table__.drop(bind=engine, checkfirst=True)
-    EgonPfHvGasVoronoi.__table__.create(bind=engine, checkfirst=True)
-
-
-def voronoi_scenarios(scn_name):
-    """
-    Insert the gas voronoi polygons into the database
-
-    This function insert the voronoi polygons for CH4, H2_grid and
-    H2_saltcavern into the database for the scenarios making
-    use of the function :py:func:`create_voronoi`.
-
-    Parameters
-    ----------
-    scn_name: str
-        Name of the scenario
-
-    """
-    for carrier in ["CH4", "H2", "H2_saltcavern"]:
-        create_voronoi(scn_name, carrier)
-
-
-def voronoi_status(scn_name):
-    """
-    Create voronoi polygons for all gas carriers in status scenario
-    """
-    for carrier in ["CH4"]:
-        create_voronoi(scn_name, carrier)
-
-
-def create_voronoi(scn_name, carrier):
-    """
-    Create voronoi polygons for specified carrier in specified scenario.
-
-    Parameters
-    ----------
-    scn_name : str
-        Name of the scenario
-    carrier : str
-        Name of the carrier
-
-    """
-    targets = GasAreas.targets
-    sources = GasAreas.sources
-    engine = db.engine()
-
-    table_exist = (
-        len(
-            pd.read_sql(
-                f"""
-    SELECT *
-    FROM information_schema.tables
-    WHERE table_schema = '{targets.get_table_schema("ch4_voronoi")}'
-        AND table_name = '{targets.get_table_name("ch4_voronoi")}'
-    LIMIT 1;
-        """,
-                engine,
-            )
-        )
-        > 0
-    )
-
-    if not table_exist:
-        create_gas_voronoi_table()
-
-    boundary = db.select_geodataframe(
-        f"""
-            SELECT id, geometry
-            FROM {sources.tables["vg250_sta_union"]};
-        """,
-        geom_col="geometry",
-    ).to_crs(epsg=4326)
-
-    if isinstance(carrier, str):
-        if carrier == "H2":
-            carriers = ["H2", "H2_grid"]
-        else:
-            carriers = [carrier]
-    else:
-        carriers = carrier
-
-    carrier_strings = "', '".join(carriers)
-
-    db.execute_sql(f"""
-        DELETE FROM {targets.tables["ch4_voronoi"]}
-        WHERE "carrier" IN ('{carrier_strings}') and "scn_name" = '{scn_name}';
-        """)
-
-    buses = db.select_geodataframe(
-        f"""
-            SELECT bus_id, geom
-            FROM {sources.tables["egon_etrago_bus"]}
-            WHERE scn_name = '{scn_name}'
-            AND country = 'DE'
-            AND carrier IN ('{carrier_strings}');
-        """,
-    )
-
-    if len(buses) == 0:
-        return
-
-    buses = buses.to_crs(epsg=4326)
-
-    # generate voronois
-    if len(buses) == 1:
-        gdf = buses.copy()
-        gdf.at[0, "geom"] = boundary.at[0, "geometry"]
-    else:
-        buses["x"] = buses.geometry.x
-        buses["y"] = buses.geometry.y
-        gdf = get_voronoi_geodataframe(buses, boundary.geometry.iloc[0])
-        gdf.rename_geometry("geom", inplace=True)
-        gdf.drop(columns=["id"], inplace=True)
-
-    # set scn_name and carrier
-    gdf["scn_name"] = scn_name
-    gdf["carrier"] = carrier
-
-    # insert data to db
-    gdf.set_crs(epsg=4326).to_postgis(
-        targets.get_table_name("ch4_voronoi"),
-        engine,
-        schema=targets.get_table_schema("ch4_voronoi"),
-        index=False,
-        if_exists="append",
-        dtype={"geom": Geometry},
-    )
-
-
 Base = declarative_base()
 
 
@@ -247,6 +113,143 @@ class EgonPfHvGasVoronoi(Base):
     geom = Column(Geometry("GEOMETRY", 4326))
 
 
+def create_gas_voronoi_table():
+    """
+    Create gas voronoi table
+    """
+    engine = db.engine()
+    EgonPfHvGasVoronoi.__table__.drop(bind=engine, checkfirst=True)
+    EgonPfHvGasVoronoi.__table__.create(bind=engine, checkfirst=True)
+
+
+def voronoi_scenarios(scn_name):
+    """
+    Insert the gas voronoi polygons into the database
+
+    This function insert the voronoi polygons for CH4, H2_grid and
+    H2_saltcavern into the database for the scenarios making
+    use of the function :py:func:`create_voronoi`.
+
+    Parameters
+    ----------
+    scn_name: str
+        Name of the scenario
+
+    """
+    for carrier in ["CH4", "H2", "H2_saltcavern"]:
+        create_voronoi(scn_name, carrier)
+
+
+def voronoi_status(scn_name):
+    """
+    Create voronoi polygons for all gas carriers in status_x scenario
+    """
+    for carrier in ["CH4"]:
+        create_voronoi(scn_name, carrier)
+
+
+def create_voronoi(scn_name, carrier):
+    """
+    Create voronoi polygons for specified carrier in specified scenario.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario
+    carrier : str
+        Name of the carrier
+
+    """
+    targets = GasAreas.targets
+    sources = GasAreas.sources
+    engine = db.engine()
+
+    table_exist = (
+        len(
+            pd.read_sql(
+                f"""
+    SELECT *
+    FROM information_schema.tables
+    WHERE table_schema = '{targets.get_table_schema("ch4_voronoi")}'
+        AND table_name = '{targets.get_table_name("ch4_voronoi")}'
+    LIMIT 1;
+        """,
+                engine,
+            )
+        )
+        > 0
+    )
+
+    if not table_exist:
+        create_gas_voronoi_table()
+
+    boundary = db.select_geodataframe(
+        f"""
+            SELECT id, geometry
+            FROM {sources.tables["vg250_sta_union"]};
+        """,
+        geom_col="geometry",
+    ).to_crs(epsg=4326)
+
+    if isinstance(carrier, str):
+        if carrier == "H2":
+            carriers = ["H2", "H2_grid"]
+        else:
+            carriers = [carrier]
+    else:
+        carriers = carrier
+
+    carrier_strings = "', '".join(carriers)
+
+    db.execute_sql(f"""
+        DELETE FROM {targets.tables["ch4_voronoi"]}
+        WHERE "carrier" IN ('{carrier_strings}') and "scn_name" = '{scn_name}';
+        """)
+
+    buses = db.select_geodataframe(
+        f"""
+            SELECT bus_id, geom
+            FROM {sources.tables["egon_etrago_bus"]}
+            WHERE scn_name = '{scn_name}'
+            AND country = 'DE'
+            AND carrier IN ('{carrier_strings}');
+        """,
+    )
+
+    if len(buses) == 0:
+        return
+
+    buses = buses.to_crs(epsg=4326)
+
+    # generate voronois
+    # For some scenarios it is defined that there is only 1 bus (e.g. gas). It
+    # means that there will be just 1 voronoi covering the entire german
+    # territory. For other scenarios with more buses, voronois are calculated.
+    if len(buses) == 1:
+        gdf = buses.copy()
+        gdf.at[0, "geom"] = boundary.at[0, "geometry"]
+    else:
+        buses["x"] = buses.geometry.x
+        buses["y"] = buses.geometry.y
+        gdf = get_voronoi_geodataframe(buses, boundary.geometry.iloc[0])
+        gdf.rename_geometry("geom", inplace=True)
+        gdf.drop(columns=["id"], inplace=True)
+
+    # set scn_name and carrier
+    gdf["scn_name"] = scn_name
+    gdf["carrier"] = carrier
+
+    # Insert data to db
+    gdf.set_crs(epsg=4326).to_postgis(
+        targets.get_table_name("ch4_voronoi"),
+        engine,
+        schema=targets.get_table_schema("ch4_voronoi"),
+        index=False,
+        if_exists="append",
+        dtype={"geom": Geometry},
+    )
+
+
 def insert_gas_voronoi():
     """
     Create the gas voronoi polygons of all configured scenarios
@@ -268,16 +271,13 @@ def insert_gas_voronoi():
 
 
 class GasAreas(Dataset):
-    """
-    Create the gas voronoi table and the gas voronoi areas
+    """Create the gas voronoi table and the gas voronoi areas
 
     *Dependencies*
       * :py:class:`EtragoSetup <egon.data.datasets.etrago_setup.EtragoSetup>`
-      * :py:class:`HydrogenBusEtrago
-        <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
+      * :py:class:`HydrogenBusEtrago <egon.data.datasets.hydrogen_etrago.HydrogenBusEtrago>`
       * :py:class:`Vg250 <egon.data.datasets.vg250.Vg250>`
-      * :py:class:`GasNodesAndPipes
-        <egon.data.datasets.gas_grid.GasNodesAndPipes>`
+      * :py:class:`GasNodesAndPipes <egon.data.datasets.gas_grid.GasNodesAndPipes>`
 
     *Resulting tables*
       * :py:class:`EgonPfHvGasVoronoi <EgonPfHvGasVoronoi>`

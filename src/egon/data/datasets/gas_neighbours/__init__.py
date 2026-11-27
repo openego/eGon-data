@@ -35,12 +35,10 @@ def download_tyndp2024_gas_data():
 
 
 def no_gas_neighbours_required():
-    print(
-        """
+    print("""
           None of the required scenarios need the creation of
           foreign gas buses
-          """
-    )
+          """)
     return None
 
 

@@ -42,8 +42,7 @@ def select_nep_power_plants(carrier, scn):
     id_column = "bnetza_id, " if nep_scenario == "eGon2035" else "mastr_id, "
 
     # Select plants with geolocation from list of conventional power plants
-    nep = db.select_dataframe(
-        f"""
+    nep = db.select_dataframe(f"""
         SELECT {id_column}name, carrier, capacity, postcode, city,
         federal_state, {capacity_column}
         FROM {sources.tables['nep_conv']}

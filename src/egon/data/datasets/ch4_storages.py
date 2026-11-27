@@ -149,11 +149,6 @@ def scale_to_scenario_capacity(Gas_storages_list, scn_name):
         remaining -= kept
         Gas_storages_list.loc[stores, "e_nom"] *= kept / capacity
 
-        print(
-            f"{scn_name}: {kept / 1e6:.1f} of {capacity / 1e6:.1f} TWh of the "
-            f"{store_type_name} stores stay in the methane system."
-        )
-
     return Gas_storages_list[Gas_storages_list["e_nom"] > 0].drop(
         columns=["store_type"]
     )
@@ -612,11 +607,6 @@ def import_ch4_grid_capacity(scn_name):
 
     unmatched = Gas_storages_list["e_nom"].isna()
     if unmatched.any():
-        print(
-            f"Warning: {int(unmatched.sum())} of {len(Gas_storages_list)} CH4 "
-            f"buses of {scn_name} could not be matched to a node of the "
-            "SciGRID_gas data, they get no line pack."
-        )
         Gas_storages_list.loc[unmatched, "e_nom"] = 0
 
     # Remove useless columns
@@ -658,8 +648,7 @@ def insert_ch4_stores(scn_name):
     engine = db.engine()
 
     # Clean table
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {CH4Storages.targets.tables['stores']}
         WHERE "carrier" = 'CH4'
         AND scn_name = '{scn_name}'

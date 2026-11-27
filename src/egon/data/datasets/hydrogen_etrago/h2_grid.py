@@ -76,7 +76,7 @@ def insert_h2_pipelines(scn_name):
         f"""
     SELECT bus_id, x, y FROM {sources.tables["buses"]}
     WHERE carrier in ('H2_grid')
-    AND scn_name = '{scn_name}'
+    AND scn_name = '{scn_name}'   
     """,
         con,
     )
@@ -124,40 +124,11 @@ def insert_h2_pipelines(scn_name):
             right_on="Ort",
         ).rename(columns={"geom": "geom_end", "x": "x_end", "y": "y_end"})
 
-        # Report the pipelines that can not be georeferenced
-        unmatched = df_merged[
-            df_merged["geom_start"].isna() | df_merged["geom_end"].isna()
-        ]
-        unmatched = unmatched[
-            ~unmatched["Anfangspunkt\n(Ort)"].isin(["nan", "---"])
-            & ~unmatched["Endpunkt\n(Ort)"].isin(["nan", "---"])
-        ]
-        if not unmatched.empty:
-            print(
-                f"{scn_name}: {len(unmatched)} pipelines of the FNB-Gas list "
-                "are not inserted, because an endpoint is not a node of the "
-                "H2 grid: "
-                + "; ".join(
-                    f"{row['Anfangspunkt' + chr(10) + '(Ort)']} -> "
-                    f"{row['Endpunkt' + chr(10) + '(Ort)']} "
-                    f"({row['Länge ' + chr(10) + '(km)']} km)"
-                    for _, row in unmatched.iterrows()
-                )
-            )
-
         H2_grid_df = df_merged.dropna(subset=["geom_start", "geom_end"])
 
         # Pipelines starting and ending at the same node can not be placed
         # (57 km, mostly Gasnetz Hamburg), see the documentation.
         same_node = H2_grid_df["geom_start"] == H2_grid_df["geom_end"]
-        if same_node.any():
-            dropped = H2_grid_df[same_node]
-            print(
-                f"{scn_name}: {same_node.sum()} pipelines "
-                f"({pd.to_numeric(dropped['Länge ' + chr(10) + '(km)'], errors='coerce').sum():.1f} km) "
-                "start and end at the same node and are not inserted: "
-                + ", ".join(sorted(set(dropped["Anfangspunkt_matched"])))
-            )
         H2_grid_df = H2_grid_df[~same_node]
         H2_grid_df = share_split_pipelines(H2_grid_df)
         H2_grid_df = pd.merge(
@@ -1601,7 +1572,6 @@ def insert_nep_h2_sections(scn_name, sources, targets):
         epsg=4326,
     )
     if buses.empty:
-        print(f"{scn_name}: no H2_grid buses, no NEP sections inserted.")
         return None
 
     metric_buses = _to_metric(buses)
@@ -1611,27 +1581,21 @@ def insert_nep_h2_sections(scn_name, sources, targets):
     metric_points = gpd.GeoSeries(
         [Point(points[name]) for name in names], crs=4326
     ).to_crs(32632)
-    distance, closest = tree.query(
+    _, closest = tree.query(
         np.column_stack([metric_points.x, metric_points.y])
     )
     bus_of = dict(zip(names, buses.index[closest]))
-    far = [
-        name for name, d in zip(names, distance) if d > H2_NODE_SNAP_KM * 1000
-    ]
 
     scn_params = get_sector_parameters("gas", scn_name)
     interest_rate = get_sector_parameters("global", scn_name)["interest_rate"]
 
-    links, inside, implausible = [], [], []
+    links = []
     for section in sections:
         bus0, bus1 = bus_of[section["start"]], bus_of[section["end"]]
-        name = f"{section['label']} {section['start']}-{section['end']}"
         if bus0 == bus1:
-            inside.append(name)
             continue
         bus_km = metric_buses[bus0].distance(metric_buses[bus1]) / 1000
         if bus_km > 2 * section["length_km"] + H2_NODE_SNAP_KM:
-            implausible.append(name)
             continue
         cost_key = (
             "H2_pipeline_retrofit"
@@ -1680,32 +1644,6 @@ def insert_nep_h2_sections(scn_name, sources, targets):
             dtype={"geom": Geometry(), "topo": Geometry()},
         )
 
-    for year in sorted({section["build_year"] for section in sections}):
-        of_year = [s for s in sections if s["build_year"] == year]
-        inserted = [link for link in links if link["build_year"] == year]
-        print(
-            f"{scn_name}: {len(inserted)} of {len(of_year)} NEP hydrogen "
-            f"sections with commissioning {year} inserted "
-            f"({sum(link['length'] for link in inserted):.0f} of "
-            f"{sum(s['length_km'] for s in of_year):.0f} km, "
-            f"{sum(link['p_nom'] for link in inserted) / 1000:.0f} GW)."
-        )
-    print(
-        f"{scn_name}: NEP hydrogen sections inside a node: {len(inside)}"
-        + (
-            f"; not inserted, because the buses are too far apart for the "
-            f"length: {'; '.join(implausible)}"
-            if implausible
-            else ""
-        )
-        + (
-            f"; end points farther than {H2_NODE_SNAP_KM} km from an "
-            f"H2_grid bus: {', '.join(far)}"
-            if far
-            else ""
-        )
-        + "."
-    )
     return None
 
 
@@ -1973,12 +1911,6 @@ def connect_h2_grid_islands(scn_name, sources, targets):
                 "topo": line,
             }
         )
-        print(
-            f"{scn_name}: isolated part of the H2 core network with "
-            f"{len(island)} buses connected by {length_km:.1f} km "
-            f"({island_links.p_nom.max():.0f} MW) from bus {island_bus} "
-            f"to bus {main_bus}"
-        )
 
     if not new_links:
         return
@@ -2065,20 +1997,18 @@ def connect_saltcavern_to_h2_grid(scn_name):
 
     engine = db.engine()
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
            DELETE FROM {targets.tables["hydrogen_links"]}
            WHERE "carrier" in ('H2_saltcavern')
-           AND scn_name = '{scn_name}';
-           """
-    )
-    h2_buses_query = f"""SELECT bus_id, x, y,ST_Transform(geom, 32632) as geom
+           AND scn_name = '{scn_name}';    
+           """)
+    h2_buses_query = f"""SELECT bus_id, x, y,ST_Transform(geom, 32632) as geom 
                         FROM  {sources.tables["buses"]}
                         WHERE carrier = 'H2_grid' AND scn_name = '{scn_name}'
                     """
     h2_buses = gpd.read_postgis(h2_buses_query, engine)
 
-    salt_caverns_query = f"""SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom
+    salt_caverns_query = f"""SELECT bus_id, x, y, ST_Transform(geom, 32632) as geom 
                             FROM  {sources.tables["buses"]}
                             WHERE carrier = 'H2_saltcavern'  AND scn_name = '{scn_name}'
                         """
@@ -2105,22 +2035,6 @@ def connect_saltcavern_to_h2_grid(scn_name):
         rates
     ).fillna(0)
     p_nom_max = potential.groupby("bus_id").p_nom_max.sum()
-    placed = rates.index.isin(potential.survey_state)
-    print(
-        f"{scn_name}: H2 saltcavern links up to {p_nom_max.sum() / 1000:.1f}"
-        f" GW withdrawal ({injection_share:.0%} for injection) of the NEP"
-        f" {rates.sum() / 1000:.1f} GW"
-        + (
-            "; not in the area: "
-            + ", ".join(
-                f"{state} {rate / 1000:.1f} GW"
-                for state, rate in rates[~placed].items()
-            )
-            if not placed.all()
-            else ""
-        )
-        + "."
-    )
 
     scn_params = get_sector_parameters("gas", scn_name)
 
@@ -2194,6 +2108,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
 
     """
     sources, targets = load_sources_and_targets("HydrogenGridEtrago")
+
     engine = db.engine()
 
     german_buses = db.select_geodataframe(
@@ -2215,9 +2130,6 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         epsg=4326,
     )
     if german_buses.empty or abroad_buses.empty:
-        print(
-            f"{scn_name}: no H2 buses in Germany or abroad, no border links."
-        )
         return pd.Series(dtype=float)
 
     nodes = read_h2_grid_nodes()
@@ -2234,7 +2146,7 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
     interest_rate = get_sector_parameters("global", scn_name)["interest_rate"]
     year_2045 = get_scenario_year(scn_name) >= NEP_H2_NETWORK_YEAR
 
-    links, missing = [], []
+    links = []
     for (
         name,
         country,
@@ -2261,13 +2173,11 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
         ).iloc[0]
         distance = german_metric.distance(point)
         if distance.min() > H2_NODE_SNAP_KM * 1000:
-            missing.append(f"{name} ({country})")
             continue
         german_bus = distance.idxmin()
 
         candidates = abroad_metric[abroad_buses["country"] == country]
         if candidates.empty:
-            missing.append(f"{name} ({country}, no bus abroad)")
             continue
         distance_abroad = candidates.distance(german_metric[german_bus])
         abroad_bus = distance_abroad.idxmin()
@@ -2323,22 +2233,6 @@ def connect_h2_grid_to_neighbour_countries(scn_name):
             if_exists="append",
             index=False,
             dtype={"geom": Geometry(), "topo": Geometry()},
-        )
-        per_country = report.groupby("country")[["entry", "exit"]].sum()
-        print(
-            f"{scn_name}: {len(links)} H2 border links, entry "
-            f"{report['entry'].sum() / 1000:.1f} GW, exit "
-            f"{report['exit'].sum() / 1000:.1f} GW ("
-            + ", ".join(
-                f"{c} {row['entry'] / 1000:.1f}/{row['exit'] / 1000:.1f}"
-                for c, row in per_country.iterrows()
-            )
-            + ")."
-        )
-    if missing:
-        print(
-            f"{scn_name}: H2 border points with capacity but without H2_grid "
-            f"bus at the border node: {', '.join(missing)}."
         )
     if not links:
         return pd.Series(dtype=float)
@@ -2412,7 +2306,7 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
     )
 
     imports = [
-        {"bus": bus, "p_nom": p_nom, "point": "abroad"}
+        {"bus": bus, "p_nom": p_nom}
         for bus, p_nom in border_entry.items()
         if p_nom > 0
     ]
@@ -2432,7 +2326,6 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
         name: (x, y) for name, x, y in zip(nodes.Ort, nodes.x, nodes.y)
     }
     german_metric = _to_metric(german_buses)
-    missing = []
     for terminal, node, entry_2037, entry_2045 in nep_h2_lng_terminals():
         # GWh/h (Brennwert) -> MW (lower heating value)
         entry = (
@@ -2447,10 +2340,9 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
         ).iloc[0]
         distance = german_metric.distance(point)
         if german_buses.empty or distance.min() > H2_NODE_SNAP_KM * 1000:
-            missing.append(terminal)
             continue
         imports.append(
-            {"bus": distance.idxmin(), "p_nom": entry, "point": terminal}
+            {"bus": distance.idxmin(), "p_nom": entry}
         )
 
     # Other imports (LH2 and derivatives) at the sites of the market survey
@@ -2476,7 +2368,6 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
                     {
                         "bus": german_metric.distance(point).idxmin(),
                         "p_nom": p_nom / len(sites),
-                        "point": f"other: {site}",
                     }
                 )
 
@@ -2486,7 +2377,6 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
     scn_params = get_sector_parameters("gas", scn_name)
     marginal_cost = scn_params["marginal_cost"]["H2_import"]
     generators = pd.DataFrame(imports)
-    report = generators.groupby("point")["p_nom"].sum()
     generators = generators.groupby("bus", as_index=False)["p_nom"].sum()
     generators["scn_name"] = scn_name
     generators["carrier"] = "H2"
@@ -2508,19 +2398,5 @@ def insert_h2_imports(scn_name, border_entry, sources, targets):
         schema=targets.get_table_schema("generators"),
         if_exists="append",
         index=False,
-    )
-    other = report.index.str.startswith("other: ")
-    print(
-        f"{scn_name}: H2 imports {generators['p_nom'].sum() / 1000:.1f} GW at "
-        f"{marginal_cost:.1f} EUR/MWh (abroad "
-        f"{report.get('abroad', 0) / 1000:.1f} GW, LNG terminals "
-        f"{report[~other].drop('abroad', errors='ignore').sum() / 1000:.1f} "
-        f"GW, other imports {report[other].sum() / 1000:.1f} GW)"
-        + (
-            f"; LNG terminals without H2_grid bus: {', '.join(missing)}"
-            if missing
-            else ""
-        )
-        + "."
     )
     return None

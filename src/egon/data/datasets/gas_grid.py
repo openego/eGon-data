@@ -253,14 +253,13 @@ def insert_CH4_nodes_list(gas_nodes_list, scn_name):
     )
     targets = GasNodesAndPipes.targets
     # Insert data to db
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
     DELETE FROM {targets.tables["buses"]}
     WHERE "carrier" = 'CH4' AND scn_name = '{c['scn_name']}' AND country = 'DE';
-    """
-    )
+    """)
 
     # Insert CH4 data to db
+    print(gas_nodes_list)
     gas_nodes_list.to_postgis(
         targets.get_table_name("buses"),
         engine,
@@ -426,6 +425,7 @@ def insert_gas_buses_abroad(scn_name):
 
     gdf_abroad_buses = define_gas_buses_abroad(scn_name)
 
+    print(gdf_abroad_buses)
     targets = GasNodesAndPipes.targets
     # Insert to db
 
@@ -881,13 +881,13 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name):
     engine = db.engine()
     targets = GasNodesAndPipes.targets
     # Clean db
-    db.execute_sql(
-        f"""DELETE FROM {targets.tables["links"]}
+    db.execute_sql(f"""DELETE FROM {targets.tables["links"]}
         WHERE "carrier" = '{gas_carrier}'
         AND scn_name = '{scn_name}'
         """
     )
 
+    print(gas_pipelines_list)
     # Insert data to db
     gas_pipelines_list.to_postgis(
         targets.get_table_name("gas_link"),
@@ -898,25 +898,23 @@ def insert_gas_pipeline_list(gas_pipelines_list, scn_name):
         dtype={"geom": Geometry(), "topo": Geometry()},
     )
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         SELECT UpdateGeometrySRID(
             '{targets.get_table_schema("gas_link")}',
             '{targets.get_table_name("gas_link")}',
             'topo',
             4326
         );
-
+    
         INSERT INTO {targets.tables["links"]}
             (scn_name, link_id, carrier, bus0, bus1, p_min_pu,
              p_nom, p_nom_extendable, length, geom, topo)
         SELECT scn_name, link_id, carrier, bus0, bus1, p_min_pu,
                p_nom, p_nom_extendable, length, geom, topo
         FROM {targets.tables["gas_link"]};
-
+    
         DROP TABLE {targets.tables["gas_link"]};
-        """
-    )
+        """)
 
 
 def remove_isolated_gas_buses(scn_name):
@@ -931,8 +929,7 @@ def remove_isolated_gas_buses(scn_name):
     """
     targets = GasNodesAndPipes.targets
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["buses"]}
         WHERE "carrier" = 'CH4'
         AND scn_name = '{scn_name}'
@@ -945,8 +942,7 @@ def remove_isolated_gas_buses(scn_name):
             (SELECT bus1 FROM {targets.tables["links"]}
             WHERE scn_name = '{scn_name}'
             AND carrier = 'CH4');
-    """
-    )
+    """)
 
 
 def insert_gas_data(scn_name):
@@ -1039,18 +1035,14 @@ def insert_gas_data_status(scn_name):
     """
     targets = GasNodesAndPipes.targets
     # delete old entries
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["links"]}
         WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
-        """
-    )
-    db.execute_sql(
-        f"""
+        """)
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["buses"]}
         WHERE carrier = 'CH4' AND scn_name = '{scn_name}'
-        """
-    )
+        """)
 
     df = pd.DataFrame(
         index=[db.next_etrago_id("bus")],

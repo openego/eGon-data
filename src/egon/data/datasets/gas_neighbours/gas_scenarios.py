@@ -1305,10 +1305,6 @@ def calculate_ch4_grid_capacities(scn_name):
         # No German CH4 link to this country, e.g. in the test mode with
         # a federal state as boundary
         if cap_DE.empty:
-            print(
-                f"{scn_name}: no CH4 link between DE and {country_code}, "
-                "its cross-border capacity is not inserted."
-            )
             continue
 
         cap_DE["p_nom"] = DE_pipe_capacities_list.at[

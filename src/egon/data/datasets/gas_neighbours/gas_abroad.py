@@ -70,18 +70,16 @@ def insert_gas_grid_capacities(Neighbouring_pipe_capacities_list, scn_name):
         dtype={"geom": Geometry(), "topo": Geometry()},
     )
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
     select UpdateGeometrySRID('grid', 'egon_etrago_gas_link', 'topo', 4326) ;
 
     INSERT INTO {targets.tables['links']} (
         scn_name, link_id, carrier,
         bus0, bus1, p_nom, p_min_pu, length, geom, topo)
-
+    
     SELECT scn_name, link_id, carrier, bus0, bus1, p_nom, p_min_pu, length, geom, topo
 
     FROM grid.egon_etrago_gas_link;
 
     DROP TABLE grid.egon_etrago_gas_link;
-        """
-    )
+        """)

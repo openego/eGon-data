@@ -1437,7 +1437,7 @@ class PowerPlants(Dataset):
             "nep_2035": "NEP_V2021_scnC2035.xlsx",
             "nep_2037": "NEP_V2025_scnC2037.xlsx",
             "mastr_deposit_id": "14783581",
-            "wind_offshore_status2019": "windoffshore_status2019.xlsx",
+	    "wind_offshore_status2019": "windoffshore_status2019.xlsx",
             "data_bundle_deposit_id": "16576506",
             "status2024_date_max": "2024-12-31 23:59:00",
             "egon2021_date_max": "2021-12-31 23:59:00",

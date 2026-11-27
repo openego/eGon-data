@@ -346,17 +346,6 @@ def load_biogas_generators(scn_name):
     biogas_generators_list["y"] = [c[0] for c in coordinates]
     biogas_generators_list["x"] = [c[1] for c in coordinates]
 
-    # Plants outside of Germany are not assigned to a CH4 bus later
-    outside = ~(
-        biogas_generators_list["y"].between(47, 56)
-        & biogas_generators_list["x"].between(5, 16)
-    )
-    if outside.any():
-        print(
-            f"Warning: {int(outside.sum())} biogas plants have coordinates "
-            "outside of Germany and are not assigned to a CH4 bus."
-        )
-
     biogas_generators_list = gpd.GeoDataFrame(
         biogas_generators_list,
         geometry=gpd.points_from_xy(
@@ -454,15 +443,6 @@ def load_LNG_generators(scn_name):
         else np.nan
     )
     terminals["marginal_cost"] = marginal_cost
-    print(
-        f"{scn_name}: LNG terminals {terminals.p_nom.sum() / 1000:.1f} GW "
-        f"({share:.0%} of the planned capacity"
-        + (
-            f", {', '.join(terminals.name)}, {marginal_cost:.1f} EUR/MWh)."
-            if not terminals.empty
-            else ")."
-        )
-    )
     return terminals[["geom", "p_nom", "marginal_cost"]]
 
 

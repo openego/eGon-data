@@ -501,11 +501,6 @@ def select_power_plant_sites():
     wrong = located.LokationMastrNummer[
         located.state.notna() & (located.state != located.federal_state)
     ].unique()
-    if len(wrong) > 0:
-        print(
-            f"{len(wrong)} power plant sites have coordinates outside of "
-            f"their federal state and are not used: {', '.join(wrong)}"
-        )
     return sites[~sites.LokationMastrNummer.isin(wrong)]
 
 
@@ -938,11 +933,6 @@ def allocate_hydrogen_power_plants():
                     load_near["name"] = None
                     load_near["siting"] = "load-near"
                     plants.append(load_near)
-            if extra > 1e-3:
-                print(
-                    f"{scn}: {extra:.0f} MW of hydrogen power plants in "
-                    f"{state} have no site and are not allocated."
-                )
 
         if not plants:
             continue
@@ -991,13 +981,6 @@ def allocate_hydrogen_power_plants():
             plants.rename(columns={"el_capacity": "Nettonennleistung"})
         )
         plants = assign_bus_id(plants, sources, drop_missing=True)
-
-        summary = plants.groupby("site").el_capacity.sum().round()
-        print(
-            f"{scn}: {plants.el_capacity.sum():.0f} MW of hydrogen power "
-            f"plants allocated, MW per choice of the site: "
-            f"{summary.to_dict()}"
-        )
 
         session = sessionmaker(bind=db.engine())()
         for _, row in plants.iterrows():

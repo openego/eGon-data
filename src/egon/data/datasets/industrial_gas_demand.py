@@ -630,8 +630,7 @@ SURVEY_STATES = {
 
 
 def read_and_process_demand(scn_name, carrier, grid_carrier):
-    """
-    Assign the industrial gas demand in Germany to buses
+    """Assign the industrial gas demand in Germany to buses
 
     This function prepares and returns the industrial gas demand time
     series for CH4 or H2 and for a specific scenario by executing the
@@ -720,8 +719,7 @@ def delete_old_entries(scn_name):
     targets = IndustrialGasDemandScenarios.targets
     sources = IndustrialGasDemandScenarios.sources
     # Clean tables
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables['etrago_load_timeseries']}
         WHERE "load_id" IN (
             SELECT load_id FROM {targets.tables['etrago_load']}
@@ -731,11 +729,9 @@ def delete_old_entries(scn_name):
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
-        """
-    )
+        """)
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables['etrago_load']}
         WHERE "load_id" IN (
             SELECT load_id FROM {targets.tables['etrago_load']}
@@ -745,8 +741,7 @@ def delete_old_entries(scn_name):
                 WHERE scn_name = '{scn_name}' AND country != 'DE'
             )
         );
-        """
-    )
+        """)
 
 
 def insert_new_entries(industrial_gas_demand, scn_name):

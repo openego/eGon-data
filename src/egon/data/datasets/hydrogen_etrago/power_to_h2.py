@@ -180,7 +180,7 @@ def insert_power_to_h2_to_power():
         # dictionary of SQL queries
         queries = {
             H2: f"""
-                    SELECT bus_id AS id, geom
+                    SELECT bus_id AS id, geom 
                     FROM {sources.tables["buses"]}
                     WHERE carrier in ('H2_grid', 'H2')
                     AND scn_name = '{SCENARIO_NAME}'
@@ -274,11 +274,9 @@ def insert_power_to_h2_to_power():
             ]  # delete all abroad_links
 
             # prepare heat_buses for filtering
-            queries[
-                HEAT_AREA
-            ] = f"""
+            queries[HEAT_AREA] = f"""
                      SELECT area_id, geom_polygon as geom
-                     FROM {sources.tables["district_heating_area"]}
+                     FROM {sources.tables["district_heating_area"]}   
                      WHERE scenario = '{SCENARIO_NAME}'
                      """
             dfs[HEAT_AREA] = gpd.read_postgis(
@@ -315,10 +313,8 @@ def insert_power_to_h2_to_power():
                 dfs[HEAT_BUS]["area_geom"]
             )
 
-            queries[
-                HEAT_LOAD
-            ] = f"""
-                    SELECT bus, load_id
+            queries[HEAT_LOAD] = f"""
+                    SELECT bus, load_id 
                     	FROM {sources.tables["loads"]}
                     WHERE carrier in ('central_heat')
                     AND scn_name = '{SCENARIO_NAME}'
@@ -327,9 +323,7 @@ def insert_power_to_h2_to_power():
             dfs[HEAT_LOAD] = pd.read_sql(queries[HEAT_LOAD], engine)
             load_ids = tuple(dfs[HEAT_LOAD]["load_id"])
 
-            queries[
-                HEAT_TIMESERIES
-            ] = f"""
+            queries[HEAT_TIMESERIES] = f"""
                 SELECT load_id, p_set
                 FROM {sources.tables["load_timeseries"]}
                 WHERE load_id IN {load_ids}
@@ -825,7 +819,7 @@ def insert_power_to_h2_to_power():
                     f"Links have been exported to {targets.tables['hydrogen_links']}"
                 )
             except Exception as e:
-                print(f"Error while exporting the {carrier} links: {e}")
+                print(f"Error while exporting link data: {e}")
                 raise
 
         def connect_off_grid_h2_demand(potential_locations):
@@ -878,12 +872,6 @@ def insert_power_to_h2_to_power():
                         "sub_type": nearest["sub_type"],
                     }
                 )
-            print(
-                f"{SCENARIO_NAME}: {len(rows)} H2 buses with industrial "
-                "demand are not reached by the H2 grid and get an "
-                "electrolyser at the nearest substation (mean distance "
-                f"{np.mean([r['distance_ac'] for r in rows]) / 1000:.1f} km)"
-            )
             return pd.concat(
                 [potential_locations, pd.DataFrame(rows)], ignore_index=True
             )

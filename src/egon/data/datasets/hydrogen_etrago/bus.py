@@ -58,11 +58,6 @@ def insert_hydrogen_buses(scn_name):
     # only the nodes with a pipeline in the scenario year
     active = active_h2_grid_nodes(scn_name)
     h2_input["Ort"] = h2_input["Ort"].astype(str).str.strip()
-    print(
-        f"{scn_name}: {len(h2_input) - h2_input.Ort.isin(active).sum()} of "
-        f"{len(h2_input)} nodes of the core network have no pipeline yet "
-        "and are not inserted."
-    )
     h2_input = h2_input[h2_input.Ort.isin(active)]
     # places with two names and the same coordinates are one bus
     h2_input = h2_input.drop_duplicates(subset=["x", "y"]).reset_index(
@@ -83,13 +78,11 @@ def insert_hydrogen_buses(scn_name):
         "H2_grid", target_buses, scenario=scn_name
     )
 
-    db.execute_sql(
-        f"""
+    db.execute_sql(f"""
         DELETE FROM {targets.tables["hydrogen_buses"]}
         WHERE scn_name = '{scn_name}'
         AND carrier = 'H2' AND country = 'DE'
-        """
-    )
+        """)
 
     h2_buses.x = h2_input.x
     h2_buses.y = h2_input.y
@@ -198,11 +191,9 @@ def insert_H2_buses_from_saltcavern(gdf, carrier, sources, targets, scn_name):
     }
 
     # electrical buses related to saltcavern storage
-    el_buses = db.select_dataframe(
-        f"""
+    el_buses = db.select_dataframe(f"""
         SELECT bus_id
-        FROM {sources.tables["saltcavern_data"]}"""
-    )["bus_id"]
+        FROM {sources.tables["saltcavern_data"]}""")["bus_id"]
 
     # locations of electrical buses (filtering not necessarily required)
     locations = db.select_geodataframe(

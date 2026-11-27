@@ -367,6 +367,7 @@ class HydrogenGridEtrago(Dataset):
       * :py:class:`PypsaEurSec <egon.data.datasets.pypsaeursec>`
       * :py:class:`HydrogenBusEtrago <HydrogenBusEtrago>`
 
+
     *Resulting*
       * :py:class:`grid.egon_etrago_link
       <egon.data.datasets.etrago_setup.EgonPfHvLink>` is extended
