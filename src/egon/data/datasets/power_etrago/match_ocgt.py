@@ -10,7 +10,10 @@ import pandas as pd
 
 from egon.data import config, db
 from egon.data.datasets import load_sources_and_targets
+from egon.data.datasets.chp import nearest
+from egon.data.datasets.chp.small_chp import assign_use_case
 from egon.data.datasets.etrago_setup import link_geom_from_buses
+from egon.data.datasets.power_plants.hydrogen import heat_to_power_ratio
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 
 # Link carriers of the gas turbines: natural gas plants and the hydrogen
@@ -187,4 +190,144 @@ def map_buses(scn_name):
 
     return gdf.rename(columns={"bus_id": "bus1"}).drop(
         columns=["geom", "geom_gas"]
+    )
+
+
+def insert_hydrogen_chp_heat():
+    for scenario in config.settings()["egon-data"]["--scenarios"]:
+        insert_hydrogen_chp_heat_per_scenario(scenario)
+
+
+def insert_hydrogen_chp_heat_per_scenario(scn_name):
+    """
+    Insert the heat links of the hydrogen power plants with CHP
+
+    Conversions of natural gas sites keep the heat-to-power ratio of the
+    replaced units (see :py:func:`heat_to_power_ratio
+    <egon.data.datasets.power_plants.hydrogen.heat_to_power_ratio>`). As
+    for the gas CHP (see :py:mod:`egon.data.datasets.chp` and
+    :py:mod:`egon.data.datasets.chp_etrago`), plants used in district
+    heating are linked from their fuel bus (as their gas turbine link) to
+    the central heat bus of the nearest district heating area.
+
+    Parameters
+    ----------
+    scn_name : str
+        Name of the scenario.
+
+    Returns
+    -------
+    None
+
+    """
+
+    sources, targets = load_sources_and_targets("OpenCycleGasTurbineEtrago")
+    chp_sources, _ = load_sources_and_targets("Chp")
+
+    db.execute_sql(
+        f"""
+        DELETE FROM {targets.tables["etrago_link"]}
+        WHERE carrier = 'central_H2_CHP_heat'
+        AND scn_name = '{scn_name}';
+        """
+    )
+
+    plants = db.select_geodataframe(
+        f"""
+        SELECT id, el_capacity, source_id->>'replaced_units' AS units, geom
+        FROM {sources.tables["power_plants"]}
+        WHERE carrier = 'hydrogen'
+        AND scenario = '{scn_name}'
+        AND sources->>'site' = 'conversion'
+        """,
+        index_col="id",
+        epsg=4326,
+    )
+    if plants.empty:
+        return
+    plants["th_capacity"] = plants.el_capacity * heat_to_power_ratio(
+        plants.units
+    )
+    plants = plants[plants.th_capacity > 0]
+    if plants.empty:
+        return
+
+    plants = assign_use_case(plants, chp_sources, scn_name)
+    plants = plants[plants.district_heating]
+    if plants.empty:
+        return
+
+    # Nearest district heating area and its central heat bus
+    areas = db.select_geodataframe(
+        f"""
+        SELECT area_id, ST_Centroid(geom_polygon) AS geom
+        FROM {sources.tables["district_heating_areas"]}
+        WHERE scenario = '{scn_name}'
+        """,
+        epsg=4326,
+    )
+    plants["area_id"] = plants.apply(
+        nearest,
+        df=areas,
+        row_geom_col="geom",
+        df_geom_col="geom",
+        centroid=True,
+        src_column="area_id",
+        axis=1,
+    )
+    heat_buses = db.select_dataframe(
+        f"""
+        SELECT b.area_id, c.bus_id AS bus1
+        FROM {sources.tables["district_heating_areas"]} b
+        JOIN {sources.tables["etrago_bus"]} c
+        ON ST_DWithin(
+            ST_Transform(ST_Centroid(b.geom_polygon), 4326),
+            c.geom,
+            0.00000001)
+        WHERE b.scenario = '{scn_name}'
+        AND c.scn_name = '{scn_name}'
+        AND c.carrier = 'central_heat'
+        """,
+        index_col="area_id",
+    )
+    plants = plants.join(heat_buses, on="area_id", how="inner")
+
+    # Nearest fuel bus, as for the gas turbines in map_buses
+    fuel = db.select_geodataframe(
+        f"""
+        SELECT bus_id, geom
+        FROM {sources.tables["etrago_bus"]}
+        WHERE carrier IN ('H2', 'H2_grid')
+        AND scn_name = '{scn_name}'
+        AND country = 'DE'
+        """,
+        epsg=4326,
+    )
+    tree = cKDTree(np.column_stack([fuel.geometry.x, fuel.geometry.y]))
+    _, idx = tree.query(
+        np.column_stack([plants.geometry.x, plants.geometry.y]), k=1
+    )
+    plants["bus0"] = fuel.bus_id.values[idx]
+
+    efficiency = get_sector_parameters("gas", scn_name)["efficiency"][
+        "central_H2_CHP_heat"
+    ]
+    links = plants.groupby(["bus0", "bus1"], as_index=False).th_capacity.sum()
+    links = links.assign(
+        scn_name=scn_name,
+        carrier="central_H2_CHP_heat",
+        efficiency=efficiency,
+        p_nom=links.th_capacity / efficiency,
+        p_nom_extendable=False,
+    ).drop(columns="th_capacity")
+    links = link_geom_from_buses(links, scn_name)
+    links["link_id"] = db.next_etrago_id("link", len(links))
+
+    links.to_postgis(
+        targets.get_table_name("etrago_link"),
+        db.engine(),
+        schema=targets.get_table_schema("etrago_link"),
+        index=False,
+        if_exists="append",
+        dtype={"topo": Geometry()},
     )

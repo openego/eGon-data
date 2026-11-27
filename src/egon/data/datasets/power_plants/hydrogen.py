@@ -237,6 +237,56 @@ def read_nep_hydrogen_projects(sources):
     ]
 
 
+def heat_to_power_ratio(units):
+    """
+    Heat-to-power ratio of the natural gas units replaced by hydrogen power
+    plants
+
+    The CHP units are the units with a thermal capacity in the MaStR, as in
+    the CHP datasets. A CHP unit has the ratio of thermal to electrical
+    capacity of its CHP system, the other units have none.
+
+    Parameters
+    ----------
+    units : pandas.Series
+        MaStR numbers of the replaced units per plant, separated by ", "
+
+    Returns
+    -------
+    pandas.Series
+        Heat-to-power ratio per plant, mean of the units weighted by their
+        net capacity
+
+    """
+    sources, _ = load_sources_and_targets("PowerPlants")
+
+    mastr = pd.read_csv(
+        sources.files["mastr_combustion"],
+        usecols=[
+            "EinheitMastrNummer",
+            "Nettonennleistung",
+            "ThermischeNutzleistung",
+            "ElektrischeKwkLeistung",
+        ],
+        index_col="EinheitMastrNummer",
+    )
+    # The MaStR gives each unit the capacities of its whole CHP system
+    ratio = (
+        (mastr.ThermischeNutzleistung / mastr.ElektrischeKwkLeistung)
+        .replace([np.inf, -np.inf], np.nan)
+        .fillna(0)
+    )
+
+    def weighted_ratio(plant_units):
+        plant_units = [u for u in plant_units.split(", ") if u in mastr.index]
+        capacity = mastr.Nettonennleistung.loc[plant_units]
+        if capacity.sum() <= 0:
+            return 0.0
+        return (capacity * ratio.loc[plant_units]).sum() / capacity.sum()
+
+    return units.fillna("").map(weighted_ratio)
+
+
 def align_nep2025_gas_units(kw_liste):
     """
     Align the natural gas units of the power plant list of the draft

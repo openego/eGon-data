@@ -550,6 +550,7 @@ class FinalValidations(Dataset):
                                 "PtH2_waste_heat",
                                 "central_gas_CHP",
                                 "central_gas_CHP_heat",
+                                "central_H2_CHP_heat",
                                 "central_gas_boiler",
                                 "central_heat_pump",
                                 "central_heat_store_charger",

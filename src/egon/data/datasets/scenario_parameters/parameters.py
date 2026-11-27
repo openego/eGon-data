@@ -1181,6 +1181,10 @@ def gas(scenario):
             # NEP Strom, 2. Entwurf, p. 49; values: DEA technology data)
             "OCGT_H2": read_costs(costs, "CCGT", "efficiency"),
             "OCGT_H2_load_near": read_costs(costs, "OCGT", "efficiency"),
+            # Heat link of the H2 CHP (conversions): power efficiency / c_v,
+            # as the heat link of the gas CHP
+            "central_H2_CHP_heat": read_costs(costs, "CCGT", "efficiency")
+            / read_costs(costs, "central gas CHP", "c_v"),
             "power_to_Heat": 0.057,  # waste heat usable in district heating per electrical input; 2037 = 0.6 x 2035 + 0.4 x 2040; source: DEA Technology Data Renewable Fuels (DEA_RF), data sheets Aug 2026, sheet '80 AEC 100 MW', 'recoverable for district heating' (70 °C)
         }
 
@@ -1304,6 +1308,10 @@ def gas(scenario):
             # NEP Strom, 2. Entwurf, p. 49; values: DEA technology data)
             "OCGT_H2": read_costs(costs, "CCGT", "efficiency"),
             "OCGT_H2_load_near": read_costs(costs, "OCGT", "efficiency"),
+            # Heat link of the H2 CHP (conversions): power efficiency / c_v,
+            # as the heat link of the gas CHP
+            "central_H2_CHP_heat": read_costs(costs, "CCGT", "efficiency")
+            / read_costs(costs, "central gas CHP", "c_v"),
             "power_to_Heat": 0.058,  # waste heat usable in district heating per electrical input; 2045 = mean of 2040 and 2050; source: DEA Technology Data Renewable Fuels (DEA_RF), data sheets Aug 2026, sheet '80 AEC 100 MW', 'recoverable for district heating' (70 °C)
         }
 

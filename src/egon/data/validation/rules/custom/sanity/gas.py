@@ -16,7 +16,6 @@ from egon_validation.rules.base import DataFrameRule, Severity
 import pandas as pd
 
 from egon.data import config
-from egon.data.datasets.power_etrago.match_ocgt import OCGT_CARRIERS
 from egon.data.datasets.scenario_parameters import (
     get_scenario_year,
     get_sector_parameters,
@@ -33,6 +32,14 @@ TARGET_SCENARIOS = ("reGon2037", "reGon2045")
 
 # Dataset boundaries an expected value has to be given for
 BOUNDARIES = ("Schleswig-Holstein", "Everything")
+
+# Link carriers of the gas turbines, as written by match_ocgt
+OCGT_CARRIERS = [
+    "OCGT",
+    "H2_OCGT_conversion",
+    "H2_OCGT_new",
+    "H2_OCGT_load_near",
+]
 
 # Expected value taken from the scenario parameters (``parameter`` of the
 # rule). The model scales the gas sector to national totals and only then
@@ -1084,6 +1091,7 @@ def final_validation_rules():
                         [
                             "central_gas_CHP",
                             "central_gas_CHP_heat",
+                            "central_H2_CHP_heat",
                             "industrial_gas_CHP",
                             "central_gas_boiler",
                             "rural_gas_boiler",

@@ -1095,6 +1095,7 @@ def insert_carriers():
                 "central_biomass_CHP",
                 "central_gas_CHP",
                 "central_gas_CHP_heat",
+                "central_H2_CHP_heat",
                 "power_to_H2",
                 "rural_gas_boiler",
                 "central_gas_boiler",

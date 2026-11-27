@@ -617,10 +617,6 @@ with airflow.DAG(
 
     with TaskGroup(group_id="etrago_input") as etrago_input_group:
 
-        create_ocgt = OpenCycleGasTurbineEtrago(
-            dependencies=[create_gas_polygons, power_plants, insert_hydrogen_buses]
-        )
-
         # Fill eTraGo generators tables
         fill_etrago_generators = Egon_etrago_gen(
             dependencies=[power_plants, weather_data]
@@ -651,6 +647,16 @@ with airflow.DAG(
 
         # CHP to eTraGo
         chp_etrago = ChpEtrago(dependencies=[chp, heat_etrago])
+
+        # OCGT to eTraGo
+        create_ocgt = OpenCycleGasTurbineEtrago(
+            dependencies=[
+                chp_etrago,
+                create_gas_polygons,
+                power_plants,
+                insert_hydrogen_buses,
+            ]
+        )
 
         # Storages to eTraGo
         storage_etrago = StorageEtrago(
