@@ -25,6 +25,7 @@ from egon.data.datasets.power_plants.pv_rooftop_buildings import (
 from egon.data.datasets.scenario_parameters import get_sector_parameters
 from egon.data.datasets.storages.home_batteries import (
     allocate_home_batteries_to_buildings,
+    assign_real_home_batteries_to_buildings,
 )
 from egon.data.datasets.storages.pumped_hydro import (
     apply_voltage_level_thresholds,
@@ -43,6 +44,12 @@ from egon.data.validation.rules.custom.sanity import (
 )
 from egon.data.db import session_scope
 
+# Maximum distance in m between a MaStR battery outside of all mv grid
+# districts and the nearest mv grid district. Units within this distance
+# are assigned to that grid (inaccurate location at the grid border),
+# units further away are dropped (implausible location).
+MAX_DISTANCE_TO_MV_GRID = 1000
+
 Base = declarative_base()
 
 
@@ -59,6 +66,9 @@ class EgonStorages(Base):
     commissioning_date = Column(DateTime)
     scenario = Column(String)
     geom = Column(Geometry("POINT", 4326))
+    # Building of real MaStR home batteries (carrier 'home_battery'), see
+    # home_batteries.assign_real_home_batteries_to_buildings()
+    building_id = Column(Integer, nullable=True)
 
 
 class Storages(Dataset):
@@ -78,6 +88,12 @@ class Storages(Dataset):
             "nep_conv": "supply.egon_nep_conventional_powerplants",
             # Added for home_batteries.py
             "etrago_storage": "grid.egon_etrago_storage",
+            "pv_roof_building": "supply.egon_power_plants_pv_roof_building",
+            "mastr_pv": "supply.egon_power_plants_pv",
+            "mastr_storage": "supply.egon_power_plants_storage",
+            "vg250_municipalities": "boundaries.vg250_gem",
+            "map_zensus_buildings": "boundaries.egon_map_zensus_mvgd_buildings",
+            "map_zensus_vg250": "boundaries.egon_map_zensus_vg250",
         },
     )
     targets = DatasetTargets(
@@ -122,7 +138,7 @@ class Storages(Dataset):
     #:
     name: str = "Storages"
     #:
-    version: str = "0.0.16"
+    version: str = "0.0.18"
 
     def __init__(self, dependencies):
         super().__init__(
@@ -206,6 +222,12 @@ class Storages(Dataset):
                     HomeBatteryCapacityComparison(
                         table="supply.egon_storages",
                         rule_id="SANITY_HOME_BATTERY_CAPACITY",
+                    ),
+                    HomeBatteryCapacityComparison(
+                        table="supply.egon_storages",
+                        rule_id="SANITY_HOME_BATTERY_CAPACITY_STATUS_QUO",
+                        rtol=0.02,
+                        status_quo=True,
                     ),
                     HomeBatteryAggregationComparison(
                         table="supply.egon_home_batteries",
@@ -741,20 +763,42 @@ def allocate_storage_units_sq(scn_name, storage_types):
 
 
 def home_batteries_per_scenario(scenario):
-    """Allocates home batteries which define a lower boundary for extendable
-    battery storage units. The overall installed capacity is taken from NEP
-    (supply.egon_scenario_capacities, carrier='home_battery'), the same way
-    for all scenarios. The spatial distribution of installed battery
-    capacities is based on the installed pv rooftop capacity.
+    """Allocates the modeled (residual) home battery capacity per mv grid.
+
+    The national target is taken from NEP (supply.egon_scenario_capacities,
+    carrier='home_battery') and distributed to the buses proportional to the
+    installed pv rooftop capacity. The real (MaStR) home battery capacity
+    per bus is subtracted from each bus's share (clipped at 0). Buses whose
+    real capacity exceeds their share would otherwise push the total above
+    the target, so the remaining residuals are scaled to
+    ``max(target - real_total, 0)``, where ``real_total`` is the real
+    capacity of all MaStR home batteries of the scenario. Real plus modeled
+    capacity thus matches the target exactly; real capacities stay
+    unchanged. Grids without a free pv building (every pv building carries
+    a real battery already) get no residual, their share is redistributed
+    to the other grids by the same scaling.
+
+    Status quo scenarios get no modeled capacity: they consist of the MaStR
+    home batteries only, like every other technology in the status quo. The
+    NEP value for the status quo describes the same stock and is only used
+    for validation.
 
     Parameters
     ----------
-    None
+    scenario : str
+        Name of the scenario
 
     Returns
     -------
     None
     """
+
+    if "status" in scenario:
+        logger.info(
+            f"No modeled home battery capacity for status quo scenario "
+            f"{scenario}, MaStR home batteries only."
+        )
+        return
 
     dataset = config.settings()["egon-data"]["--dataset-boundary"]
 
@@ -765,17 +809,14 @@ def home_batteries_per_scenario(scenario):
         AND carrier = 'home_battery';
         """)
 
-    # Sum over all returned federal states: status2024 and eGon2035 each
-    # have a single national row (nuts='DE') - their underlying NEP source
-    # files provide no federal-state breakdown for home batteries -
-    # reGon2037/reGon2045 have one row per federal state which is already
-    # scoped to the active --dataset-boundary
+    # Sum over all returned federal states: eGon2035 has a single national
+    # row (nuts='DE') - its underlying NEP source file provides no
+    # federal-state breakdown for home batteries - reGon2037/reGon2045 have
+    # one row per federal state which is already scoped to the active
+    # --dataset-boundary
     target = target_df.capacity.sum()
 
-    if (
-        ("status" in scenario or scenario == "eGon2035")
-        and dataset == "Schleswig-Holstein"
-    ):
+    if scenario == "eGon2035" and dataset == "Schleswig-Holstein":
         # national-only target, still needs to be broken down to SH's
         # rough share in test mode
         target = target / 16
@@ -794,10 +835,10 @@ def home_batteries_per_scenario(scenario):
     battery["p_nom_min"] = target * battery["p_nom"] / battery["p_nom"].sum()
     battery = battery.drop(columns=["p_nom"])
 
-    # Subtract already-existing real battery capacity per bus from the 
-    # NEP target to avoid double-counting real + modeled capacity at the 
-    # same bus. SO just modeled capacities are spartially distributed 
-    # according PV-capacities
+    # Subtract already-existing real battery capacity per bus from the
+    # bus's share to avoid double-counting real + modeled capacity at the
+    # same bus. Only modeled capacities are distributed spatially according
+    # to pv rooftop capacity.
     real_capacity = db.select_dataframe(f"""
         SELECT bus_id AS bus, sum(el_capacity) AS real_capacity
         FROM {Storages.targets.tables['storages']}
@@ -810,18 +851,82 @@ def home_batteries_per_scenario(scenario):
     battery = battery.merge(real_capacity, on="bus", how="left")
     battery["real_capacity"] = battery["real_capacity"].fillna(0)
 
-    over_covered = battery["real_capacity"] > battery["p_nom_min"]
-    if over_covered.any():
-        logger.warning(
-            f"In {over_covered.sum()} grid(s) in scenario {scenario}, real "
-            f"home battery capacity already exceeds the modeled target. "
-            f"No additional (modeled) capacity will be added there."
-        )
-
-    battery["p_nom_min"] = (
-        battery["p_nom_min"] - battery["real_capacity"]
-    ).clip(lower=0)
+    raw_residual = (battery["p_nom_min"] - battery["real_capacity"]).clip(
+        lower=0
+    )
     battery = battery.drop(columns=["real_capacity"])
+
+    # Grids where every pv building already carries a real battery cannot
+    # take a modeled residual in allocate_home_batteries_to_buildings();
+    # their share is redistributed to the other grids by the scaling below.
+    # Occupied buildings are counted instead of real batteries, because
+    # several real batteries can share one building (same MaStR location or
+    # operator, see allocate_battery_storage()). The building of a real
+    # battery is always located at the bus of the battery.
+    n_pv = db.select_dataframe(f"""
+        SELECT bus_id AS bus, COUNT(DISTINCT building_id) AS n_pv
+        FROM {Storages.sources.tables['pv_roof_building']}
+        WHERE scenario = '{scenario}'
+        GROUP BY bus_id;
+        """)
+    n_occupied = db.select_dataframe(f"""
+        SELECT bus_id AS bus, COUNT(DISTINCT building_id) AS n_occupied
+        FROM {Storages.targets.tables['storages']}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' = 'MaStR'
+        AND building_id IS NOT NULL
+        GROUP BY bus_id;
+        """)
+    counts = (
+        battery[["bus"]]
+        .merge(n_pv, on="bus", how="left")
+        .merge(n_occupied, on="bus", how="left")
+        .fillna(0)
+    )
+    blocked = (counts["n_pv"] - counts["n_occupied"] <= 0).values
+    if blocked.any():
+        logger.info(
+            f"Scenario {scenario}: {blocked.sum()} grid(s) without free pv "
+            f"buildings, residual of {raw_residual[blocked].sum():.3f} MW "
+            f"redistributed to other grids."
+        )
+    raw_residual = raw_residual.where(~blocked, 0)
+
+    # Real capacity of all MaStR home batteries of the scenario, including
+    # those at buses without pv rooftop capacity, so that real plus modeled
+    # capacity in supply.egon_storages matches the target exactly.
+    real_total = db.select_dataframe(f"""
+        SELECT COALESCE(SUM(el_capacity), 0) AS real_total
+        FROM {Storages.targets.tables['storages']}
+        WHERE carrier = 'home_battery'
+        AND scenario = '{scenario}'
+        AND sources ->> 'el_capacity' = 'MaStR';
+        """).real_total.iat[0]
+
+    # Real capacity exceeding a bus's share is offset against the residuals
+    # of all other buses by scaling them to the national residual.
+    residual_total = max(target - real_total, 0)
+
+    if raw_residual.sum() > 0:
+        scaling_factor = residual_total / raw_residual.sum()
+        battery["p_nom_min"] = raw_residual * scaling_factor
+        logger.info(
+            f"Scenario {scenario}: residual home battery capacity per grid "
+            f"scaled by {scaling_factor:.6f} to {residual_total:.3f} MW "
+            f"(target {target:.3f} MW, real {real_total:.3f} MW)."
+        )
+    else:
+        battery["p_nom_min"] = 0.0
+        if residual_total > 0:
+            logger.error(
+                f"Scenario {scenario}: {residual_total:.3f} MW residual home "
+                f"battery capacity could not be allocated to any grid."
+            )
+
+    # Grids without residual (blocked or real capacity above their share)
+    # get no row instead of a row with 0 MW
+    battery = battery.loc[battery["p_nom_min"] > 0].copy()
 
     battery["carrier"] = "home_battery"
     battery["scenario"] = scenario
@@ -876,10 +981,11 @@ def allocate_battery_storage(scn_name):
         "%Y-%m-%d %H:%M:%S"
     )
 
-    sql = """
+    sql = f"""
         SELECT gens_id AS source_id, capacity AS el_capacity, voltage_level,
-               bus_id, commissioning_date, decommissioning_date, geom
-        FROM supply.egon_power_plants_storage
+               bus_id, commissioning_date, decommissioning_date,
+               location_mastr_id, operator_mastr_id, geometry_geocoded, geom
+        FROM {Storages.sources.tables['mastr_storage']}
         WHERE technology = 'Batterie'
     """
     mastr = db.select_geodataframe(sql, geom_col="geom", epsg=4326)
@@ -916,8 +1022,80 @@ def allocate_battery_storage(scn_name):
     ).rename(columns={"capacity": "el_capacity"})
     mastr = mastr.loc[~mastr.end_of_life].drop(columns=["age", "end_of_life"])
 
+    # Units without capacity are not written, they would only occupy a
+    # building in assign_real_home_batteries_to_buildings()
+    no_capacity = ~(mastr["el_capacity"] > 0)
+    if no_capacity.any():
+        logger.info(
+            f"Scenario {scn_name}: {no_capacity.sum()} battery unit(s) "
+            f"without capacity dropped."
+        )
+        mastr = mastr.loc[~no_capacity]
+
     mastr["carrier"] = "battery"
     mastr.loc[mastr.voltage_level.isin([6, 7]), "carrier"] = "home_battery"
+
+    # Home batteries are placed on the building of a pv rooftop plant of
+    # the scenario, bus_id and geom are taken from that building. This is
+    # done before the handling of units outside of all mv grid districts
+    # below, so that matched units are not dropped because of an
+    # inaccurate substitute point.
+    mastr["building_id"] = None
+    home = mastr.carrier == "home_battery"
+    if home.any():
+        assigned = assign_real_home_batteries_to_buildings(
+            mastr.loc[home], scn_name
+        )
+        mastr.loc[assigned.index, "building_id"] = assigned["building_id"]
+        mastr.loc[assigned.index, "bus_id"] = assigned["bus_id"]
+        mastr.loc[assigned.index, "geom"] = assigned["geom"]
+
+    # Units outside of all mv grid districts get bus_id -1 in the MaStR
+    # import (power_plants/mastr.py) and would be lost in eTraGo and in
+    # egon_home_batteries. Assign them to the nearest mv grid district
+    # within MAX_DISTANCE_TO_MV_GRID, drop the others.
+    outside = mastr.bus_id == -1
+    if outside.any():
+        mv_grid_districts = db.select_geodataframe(
+            f"""
+            SELECT bus_id, geom
+            FROM {Storages.sources.tables['egon_mv_grid_district']}
+            """,
+            epsg=3035,
+        )
+        nearest = gpd.sjoin_nearest(
+            mastr.loc[outside, ["geom"]].to_crs(3035),
+            mv_grid_districts,
+            how="left",
+            max_distance=MAX_DISTANCE_TO_MV_GRID,
+            distance_col="distance",
+        )
+        # equidistant grids return more than one row, keep one
+        nearest = nearest[~nearest.index.duplicated(keep="first")]
+
+        assigned = nearest.bus_id.notna()
+        if assigned.any():
+            idx = nearest.index[assigned]
+            mastr.loc[idx, "bus_id"] = nearest.loc[idx, "bus_id"].astype(
+                int
+            )
+            logger.warning(
+                f"Scenario {scn_name}: {len(idx)} battery unit(s) "
+                f"({mastr.loc[idx, 'el_capacity'].sum():.3f} MW) outside of "
+                f"all mv grid districts assigned to the nearest grid "
+                f"(max. {nearest.loc[idx, 'distance'].max():.0f} m): "
+                f"{mastr.loc[idx, 'source_id'].tolist()}"
+            )
+
+        dropped = nearest.index[~assigned]
+        if len(dropped) > 0:
+            logger.warning(
+                f"Scenario {scn_name}: {len(dropped)} battery unit(s) "
+                f"({mastr.loc[dropped, 'el_capacity'].sum():.3f} MW) more "
+                f"than {MAX_DISTANCE_TO_MV_GRID} m away from any mv grid "
+                f"district dropped: {mastr.loc[dropped, 'source_id'].tolist()}"
+            )
+            mastr = mastr.drop(index=dropped)
 
     mastr["scenario"] = scn_name
     mastr["source_id"] = mastr["source_id"].apply(lambda x: {"MastrNummer": x})
@@ -943,6 +1121,7 @@ def allocate_battery_storage(scn_name):
                     "commissioning_date",
                     "geom",
                     "sources",
+                    "building_id",
                 ]
             ].to_dict(orient="records"),
         )

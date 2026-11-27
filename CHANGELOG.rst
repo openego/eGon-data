@@ -167,7 +167,15 @@ Changed
   and foreign batteries; cost parameters renamed accordingly
   ('battery inverter', 'battery storage', capital_cost 'battery')
   `#1582 <https://github.com/openego/eGon-data/issues/1582>`_
-
+* Improve spatial distribution of real home batteries: each MaStR home
+  battery is assigned to the building of the pv plant at the same MaStR
+  location (``LokationMastrNummer``) or of the same operator
+  (``AnlagenbetreiberMastrNummer``), the remaining ones to free pv
+  buildings like pv plants (nearest building for exact coordinates,
+  otherwise random within the municipality); bus and building are taken
+  from that building and stored in ``supply.egon_storages``, rows without
+  capacity are no longer written
+  `#XXXX <https://github.com/openego/eGon-data/issues/XXXX>`_
 
 Bug Fixes
 ---------
@@ -300,18 +308,14 @@ Bug Fixes
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
 * Fix district heating areas lost by exact geometry joins with heat buses
   `#1568 <https://github.com/openego/eGon-data/issues/1568>`_
-* Fix the OSM download failing with ``HTTP Error 308``: update the
-  Geofabrik URLs to their new location
-  `#1587 <https://github.com/openego/eGon-data/issues/1587>`_
-* Stop the eMobility MIV dataset from deleting the HGV flexibility stores:
-  ``delete_model_data_from_db`` removed every ``battery_storage`` store on a
-  German bus, including HGVCharging's on its ``HGV_charger`` buses. It now
-  deletes only stores on MIV's own ``Li_ion`` buses
-  `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
-* Fix grid-scale batteries abroad missing in the status-quo scenarios (only
-  GB had a capacity): use one status-quo value per country from Eurostat
-  ``nrg_inf_bt`` (2024, from 1 MWh upwards) and Modo Energy for GB
-  `#1584 <https://github.com/openego/eGon-data/issues/1584>`_
+* Fix home battery capacities missing the scenario targets: status quo
+  scenarios use MaStR home batteries only, for future scenarios the
+  residual capacity to the national target is scaled to hit the target
+  exactly and grids without free pv buildings get no residual; each real
+  home battery is assigned to only one building and MaStR batteries
+  outside of all mv grid districts are assigned to the nearest grid
+  within 1 km instead of ``bus_id = -1``
+  `#1589 <https://github.com/openego/eGon-data/issues/1589>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

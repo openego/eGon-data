@@ -84,21 +84,17 @@ class HomeBatteryCapacityComparison(PowerPlantsCapacityComparison):
     :func:`egon.data.datasets.storages.home_batteries_per_scenario`) and
     compares it with supply.egon_scenario_capacities.
 
-    Unlike :class:`PowerPlantsCapacityComparison`, status quo scenarios
-    are **included** here (``_scenarios()`` overridden to not filter them
-    out): ``home_batteries_per_scenario()`` reads a ``home_battery``
-    target for status quo scenarios too, unlike every carrier checked by
-    the parent class, none of which has a status quo target at all. This
-    is deliberate: it is meant to surface a known, unresolved mismatch --
-    on the reference database, ``status2024`` allocated ~18.8 % more
-    capacity than its target (target 9900 MW, allocated 11760 MW,
-    2026-09-28), caused by two compounding issues in the allocation code
-    (over-coverage at some buses is never credited against underserved
-    buses nationally, and the modeled residual is silently dropped at
-    buses where every PV-equipped building already has a real battery --
-    see the egon-data electricity_supply scenario migration checklist,
-    home battery allocation section, for the full analysis and a proposed
-    fix). This rule intentionally stays red on that data until fixed.
+    For future scenarios (default, ``status_quo=False``) the modeled
+    residual is scaled so that the sum hits the target exactly, so the
+    tolerance only has to cover floating-point rounding.
+
+    Status quo scenarios have a ``home_battery`` target too (the NEP
+    stock), but use MaStR home batteries only (#1589), so their sum
+    deviates from the target by the difference between MaStR and the NEP
+    stock (``status2024``: 9826 MW vs. 9900 MW, -0.75 %). They are checked
+    by a separate instance with ``status_quo=True`` and a loose
+    tolerance, as a plausibility check that the MaStR home batteries
+    arrive completely (import, aging, voltage level, bus assignment).
 
     ``battery`` (grid-scale) is not compared here, see
     :class:`PumpedHydroCapacityComparison`.
@@ -115,10 +111,10 @@ class HomeBatteryCapacityComparison(PowerPlantsCapacityComparison):
         table: Primary table being validated (supply.egon_storages)
         rule_id: Unique identifier for this validation rule
         rtol: Relative tolerance of the deviation (default: 1e-6 =
-            0.0001 %, only floating-point rounding). The
-            reGon scenarios overshoot slightly (2026-11-13: up to +8 MW),
-            most likely because of the same over-coverage issue, and stay
-            red until it is fixed, as does ``status2024``.
+            0.0001 %, only floating-point rounding). Pass ``rtol=0.02``
+            explicitly for the status quo instance.
+        status_quo: If True, check only status quo scenarios, otherwise
+            only future scenarios (default: False).
 
     Example:
         >>> validation = {
@@ -126,7 +122,13 @@ class HomeBatteryCapacityComparison(PowerPlantsCapacityComparison):
         ...         HomeBatteryCapacityComparison(
         ...             table="supply.egon_storages",
         ...             rule_id="SANITY_HOME_BATTERY_CAPACITY",
-        ...         )
+        ...         ),
+        ...         HomeBatteryCapacityComparison(
+        ...             table="supply.egon_storages",
+        ...             rule_id="SANITY_HOME_BATTERY_CAPACITY_STATUS_QUO",
+        ...             rtol=0.02,
+        ...             status_quo=True,
+        ...         ),
         ...     ]
         ... }
     """
@@ -140,12 +142,15 @@ class HomeBatteryCapacityComparison(PowerPlantsCapacityComparison):
     ):
         super().__init__(rule_id=rule_id, table=table, rtol=rtol, **kwargs)
 
-    @staticmethod
-    def _scenarios():
-        # Unlike PowerPlantsCapacityComparison, status quo scenarios are
-        # not filtered out: home_batteries_per_scenario() reads a
-        # home_battery target for them too.
-        return config.settings()["egon-data"]["--scenarios"]
+    def _scenarios(self):
+        # Status quo scenarios have a home_battery target too, but are
+        # checked by a separate instance (status_quo=True).
+        status_quo = self.params.get("status_quo", False)
+        return [
+            scn
+            for scn in config.settings()["egon-data"]["--scenarios"]
+            if ("status" in scn) == status_quo
+        ]
 
     def get_query(self, ctx):
         scenarios = self._scenarios()
