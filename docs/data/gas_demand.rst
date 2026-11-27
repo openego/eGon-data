@@ -7,37 +7,24 @@ heat and electricity sectors (e.g. gas boilers, CHP and gas turbines as
 In Germany
 ~~~~~~~~~~
 
-The industrial demand of methane and hydrogen over the year comes from the
-scenario parameters (``industrial_gas_demand``):
+The industrial demand of methane and hydrogen over the year is a scenario
+parameter (``industrial_gas_demand``), including the non-energy use:
 
 .. list-table:: Industrial gas demand in Germany
-   :widths: 16 14 14 56
+   :widths: 16 84
    :header-rows: 1
 
    * - Scenario
-     - CH4 [TWh]
-     - H2 [TWh]
-     - Source
+     - Source of the demand over the year
    * - status2024
-     - 214.7
-     - 0
-     - AG Energiebilanzen 2024 [AGEB2024]_, Tab. 8: final energy consumption of
-       the industry (192.7 TWh, including gas for heat in industrial CHP) plus
-       non-energy use (22.0 TWh)
-   * - eGon2035
-     - 196.0
-     - 16.1
-     - FfE eXtremOS data of 2035, not scaled (the electricity side of eGon2035
-       stays on the NEP Strom 2035)
+     - AG Energiebilanzen 2024 [AGEB2024]_, Tab. 8: final energy consumption
+       of the industry (including the gas for heat in industrial CHP) plus
+       non-energy use; no hydrogen demand (no hydrogen system)
    * - reGon2037
-     - 100.9
-     - 84.4
      - Szenariorahmen Gas und Wasserstoff 2025, scenario 2
    * - reGon2045
-     - 0
-     - 202.3
-     - Szenariorahmen Gas und Wasserstoff 2025, scenario 2 (no methane demand
-       in 2045, biomethane does not have a fixed demand)
+     - Szenariorahmen Gas und Wasserstoff 2025, scenario 2; no methane demand
+       (no methane system in Germany, see the gas grid section)
 
 The target scenarios follow scenario 2 of the approved Szenariorahmen
 [SR_GasH2_2025]_ (based on the long-term scenario O45-Strom: hydrogen mainly in
@@ -45,35 +32,35 @@ power plants and industry, aligned with scenarios B/C of the NEP Strom used for
 the electricity sector). The approval only gives capacities (GWh/h), no
 energies. The energies are therefore those of the same storyline in the draft
 of July 2024 ("Fokus Strom", T45-Strom*, numbered scenario 1 there; Tab. 25 and
-26), scaled by the ratio of the approved to the draft industry capacity (CH4
-2037: 20/23 GWh/h; H2 2037: 18/16 GWh/h, 2045: 42/60 GWh/h), i.e. at the
-full-load hours of the draft.
+26), scaled by the ratio of the approved to the draft industry capacity, i.e.
+at the full-load hours of the draft.
 
 The temporal distribution comes from the eXtremOS project of the FfE
 [eXtremOS]_ (industrial demand of methane and hydrogen in 2035, per NUTS-3
-region). For the reGon scenarios and status2024 it is only used as a pattern:
-the loads are scaled to the German totals above. The data is downloaded from the FfE open data platform; as the
-platform no longer answers, the copy of the data bundle is used. The status
-quo scenario has no hydrogen demand (no hydrogen system).
+region). It is only used as a pattern: the loads are scaled to the German
+totals above. The data is downloaded from the FfE open data platform; if the
+platform does not answer, the copy of the data bundle is used.
 
 The spatial distribution differs by carrier:
 
-* *Methane* (all scenarios) and *hydrogen in eGon2035*: the NUTS-3 regions of
-  the FfE data, each assigned to the CH4 bus (methane) or the ``H2_grid`` or
-  ``H2`` bus (hydrogen) of its Voronoi area. As the ``H2_grid`` buses only
-  exist where the core network has a pipeline in the scenario year, hydrogen
-  demand far from the network is assigned to an ``H2`` bus at a CH4 node and
-  supplied locally (see electrolysis in the gas supply section).
-* *Hydrogen in reGon2037 and reGon2045*: the same NUTS-3 regions, first
-  rescaled per federal state to the industrial hydrogen demand of the market
-  survey of the Szenariorahmen [SR_GasH2_2025_Annexes]_ (category
-  "Ausspeisung", exit to the industry, demand of 2035; 2037: projects with at
-  least the status "Entwurfsplanung", 2045: all projects; some states are
-  grouped in the survey). Within a state the regions keep their shares of the
-  FfE data. The regions are then assigned to the ``H2_grid`` or ``H2`` bus of
-  their Voronoi area as above. Optionally (``H2_DEMAND_BY_GRID``, off by
-  default) the German hourly profile is instead spread over the ``H2_grid``
-  buses in proportion to the capacity of the pipelines connected to each bus.
+* *Methane*: the NUTS-3 regions of the FfE data, each assigned to the CH4 bus
+  of its Voronoi area (in status2024 the only CH4 bus of Germany).
+* *Hydrogen* (reGon2037, reGon2045): the same NUTS-3 regions, first rescaled
+  per federal state to the industrial hydrogen demand of the market survey of
+  the Szenariorahmen [SR_GasH2_2025_Annexes]_ (category "Ausspeisung", exit to
+  the industry; 2037: projects with at least the status "Entwurfsplanung",
+  2045: all projects; some states are grouped in the survey). Within a state
+  the regions keep their shares of the FfE data. The regions are then
+  assigned to the ``H2_grid`` or ``H2`` bus of their Voronoi area. Only
+  nodes of the node list of the hydrogen network have a Voronoi area:
+  ``H2_grid`` buses have a pipeline in the scenario year, ``H2`` buses are
+  nodes without one (see the gas grid section; the ``H2`` buses at CH4 buses
+  get no demand). Hydrogen demand at an ``H2`` bus is supplied locally (see
+  electrolysis in the gas supply section).
+
+The market survey gives values per year until 2035; the shares per federal
+state of all its uses in the model (industrial demand, storage, other
+imports) are those of 2035.
 
 In a test run with a dataset boundary, the demand is scaled for the whole of
 Germany and only the loads inside the boundary are kept, so the region keeps
@@ -100,23 +87,6 @@ which is modelled by gas turbines):
   statistics [BFE2019]_ for Switzerland), scaled with the development of the
   methane final demand of the EU27 in the same scenario.
 
-.. list-table:: Methane final demand abroad
-   :widths: 30 23 23 23
-   :header-rows: 1
-
-   * -
-     - eGon2035
-     - reGon2037
-     - reGon2045
-   * - Total of the neighbouring countries [TWh]
-     - 909
-     - 829
-     - 556
-   * - of which Norway [TWh]
-     - 6.4
-     - 5.8
-     - 3.9
-
 The temporal profile is the rural heat demand of the country in the PyPSA-Eur
 run, the largest part of the final demand of methane.
 
@@ -124,7 +94,7 @@ The electricity demand of the electrolysers abroad is a constant electrical
 load (carrier ``H2_for_industry``) at the AC bus of the TYNDP node: the yearly
 consumption of the electrolysers ("Electrolyser (load)") of the TYNDP 2024
 electricity results, scenario "Distributed Energy", interpolated between 2035,
-2040 and 2050 (about 44 GW in reGon2037 and 87 GW in reGon2045 on average).
+2040 and 2050.
 
 The implementation is detailed in :py:mod:`gas_neighbours.gas_scenarios
 <egon.data.datasets.gas_neighbours.gas_scenarios>`.
