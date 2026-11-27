@@ -308,6 +308,10 @@ Bug Fixes
   German bus, including HGVCharging's on its ``HGV_charger`` buses. It now
   deletes only stores on MIV's own ``Li_ion`` buses
   `#1526 <https://github.com/openego/eGon-data/issues/1526>`_
+* Fix grid-scale batteries abroad missing in the status-quo scenarios (only
+  GB had a capacity): use one status-quo value per country from Eurostat
+  ``nrg_inf_bt`` (2024, from 1 MWh upwards) and Modo Energy for GB
+  `#1584 <https://github.com/openego/eGon-data/issues/1584>`_
 
 Version 2.0.0 (2025-08-20)
 ==========================

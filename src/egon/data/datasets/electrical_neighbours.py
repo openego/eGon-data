@@ -2260,35 +2260,34 @@ def insert_storage_units_sq():
                 session.add(entry)
                 session.commit()
 
-        # big scale batteries
-        # info based on EASE data. https://ease-storage.eu/publication/emmes-7-0-march-2023/
-        # batteries smaller than 100MW are neglected
-
-        # TODO: include capacities between 2020 and 2023
+        # Grid-scale batteries: installed power in MW at the end of 2024,
+        # used for every status-quo scenario.
+        # Source: Eurostat nrg_inf_bt (CAP_BAP), sum of the size classes
+        # from 1 MWh storage capacity upwards (batteries below 1 MWh are
+        # home batteries and neglected here).
+        # https://ec.europa.eu/eurostat/databrowser/product/page/NRG_INF_BT
+        # GB and CH are not covered by Eurostat. GB: Modo Energy, GB battery
+        # energy storage markets 2024 year in review.
+        # https://modoenergy.com/research/gb-battery-energy-storage-markets-2024-year-in-review-great-britain-wholesale-balancing-mechanism-frequency-response-reserve
+        # CH: no source, 0.
         bat_per_country = {
-            "LU": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "AT": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "FR": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "NL": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "DK_1": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "DK_2": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "PL": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "CH": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "NO": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "BE": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "SE": [0, pd.NA, pd.NA, pd.NA, pd.NA],
-            "GB": [723.8, 952.3, 1380.9, 2333.3, 3928.5],
-            "CZ": [0, pd.NA, pd.NA, pd.NA, pd.NA],
+            "LU": 0,
+            "AT": 8,
+            "FR": 765.117,
+            "NL": 350,
+            "DK_1": 0,
+            "DK_2": 0,
+            "PL": 9.619,
+            "CH": 0,
+            "NO": 0,
+            "BE": 256.1,
+            "SE": 465,
+            "GB": 4700,
+            "CZ": 41.05,
         }
-        bat_sq = pd.DataFrame(bat_per_country).T.set_axis(
-            ["2019", "2020", "2021", "2022", "2023"], axis=1
+        bat_sq = pd.DataFrame.from_dict(
+            bat_per_country, orient="index", columns=["p_nom"]
         )
-
-        # Select year of interest, falling back to the latest year
-        # available in the (currently un-updated) data above
-        bat_year = min(year, max(int(c) for c in bat_sq.columns))
-        bat_sq = bat_sq[[str(bat_year)]]
-        bat_sq.rename(columns={str(bat_year): "p_nom"}, inplace=True)
 
         # Add missing information suitable for eTraGo selected from scenario_parameter table
         parameters_batteries = get_sector_parameters(
@@ -2695,7 +2694,7 @@ class ElectricalNeighbours(Dataset):
     #:
     name: str = "ElectricalNeighbours"
     #:
-    version: str = "0.0.21"
+    version: str = "0.0.22"
 
     sources = DatasetSources(
         tables={
